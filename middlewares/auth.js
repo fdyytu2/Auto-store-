@@ -1,10 +1,13 @@
 module.exports = {
-    cekLoginAPI: (req, res, next) => {
-        if (req.session.loggedIn) next();
-        else res.status(401).json({ success: false, message: 'Akses ditolak! Belum login.' });
-    },
-    cekLoginWeb: (req, res, next) => {
-        if (req.session.loggedIn) next();
-        else res.redirect('/login.html');
+    cekLogin: (req, res, next) => {
+        // Cek apakah user sudah punya sesi login
+        if (req.session && req.session.user) {
+            return next(); // Punya tiket? Silakan lewat!
+        }
+        // Gak punya tiket? Kasih error 401 atau tendang ke login
+        if (req.path.startsWith('/api/')) {
+            return res.status(401).json({ error: 'Belum login bro!' });
+        }
+        res.redirect('/login.html');
     }
 };
