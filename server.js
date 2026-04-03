@@ -1,54 +1,41 @@
 const express = require('express');
-const session = require('express-session');
-const path = require('path');
-const config = require('./config');
-const db = require('./models'); // Tarik koneksi database ORM
-
+const db = require('./models');
 const app = express();
+
+// Biar express bisa baca data dari form website
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }));
 
-app.use(session({
-    secret: config.sessionSecret,
-    resave: false,
-    saveUninitialized: false
-}));
+// Rute untuk mengecek status pengaturan
+app.get('/api/settings', async (req, res) => {
+    let setting = await db.Setting.findByPk(1);
+    res.json(setting || { message: "Belum ada pengaturan" });
+});
 
-const { cekLoginWeb } = require('./middlewares/auth');
-const adminRoutes = require('./routes/admin');
+// Rute Super Admin buat nyimpen/update Token Bot
+app.post('/api/update-token', async (req, res) => {
+    try {
+        const { botToken } = req.body;
+        
+        // Cari atau buat baru
+        const [setting, created] = await db.Setting.findOrCreate({
+            where: { id: 1 },
+            defaults: { botToken: botToken, maintenanceMode: false }
+        });
 
-// Endpoint Auth
-app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
-    const dbUser = await db.Setting.findByPk('admin_username');
-    const dbPass = await db.Setting.findByPk('admin_password');
+        // Kalau udah ada, update tokennya
+        if (!created) {
+            setting.botToken = botToken;
+            await setting.save();
+        }
 
-    if (dbUser && dbPass && username === dbUser.value && password === dbPass.value) {
-        req.session.loggedIn = true;
-        res.json({ success: true });
-    } else {
-        res.status(401).json({ success: false, message: 'Username atau Password salah!' });
+        res.json({ success: true, message: "✅ Token berhasil diupdate dari Dashboard!", token: setting.botToken });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-app.post('/api/logout', (req, res) => {
-    req.session.destroy();
-    res.json({ success: true });
-});
-
-// Pasang rute admin ke Express
-app.use('/api', adminRoutes);
-
-// Rute Tampilan HTML
-app.get('/dashboard', cekLoginWeb, (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
-
-app.get('/', (req, res) => {
-    res.redirect(req.session.loggedIn ? '/dashboard' : '/login.html');
-});
-
-// Nyalain Web
-app.listen(config.port, () => {
-    console.log(`🌐 Server Dashboard nyala di port ${config.port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🌐 Dashboard Server nyala di port ${PORT}`);
 });

@@ -1,49 +1,41 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-const db = require('./models'); // Tarik database ORM
+const db = require('./models');
+const { Client, GatewayIntentBits } = require('discord.js');
+require('dotenv').config();
 
-const client = new Client({
-    intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent ]
-});
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
-client.commands = new Collection();
+async function startBot() {
+    try {
+        console.log('⏳ Memeriksa pengaturan dari Database...');
+        
+        // Cari pengaturan ID 1
+        let setting = await db.Setting.findByPk(1);
+        
+        // Kalau database kosong, buatin default-nya otomatis!
+        if (!setting) {
+            console.log('⚠️ Data pengaturan belum ada. Membuat default pengaturan...');
+            setting = await db.Setting.create({
+                id: 1,
+                botToken: process.env.TOKEN || '', // Ambil dari Railway kalau ada, kalau gak kosongin
+                maintenanceMode: false
+            });
+        }
 
-// Memuat Event Handler otomatis
-const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-for (const file of eventFiles) {
-    const event = require(path.join(eventsPath, file));
-    if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args, client, db));
-    } else {
-        client.on(event.name, (...args) => event.execute(...args, client, db));
+        // Kalau tokennya benar-benar kosong
+        if (!setting.botToken || setting.botToken === '') {
+            console.log('🛑 BOT KOSONG: Token belum diisi! Silakan isi Token lewat Dashboard Super Admin.');
+            // Biarkan nyala, tapi bot Discord gak login
+            return; 
+        }
+
+        console.log('🟢 Token ditemukan! Menghidupkan Bot Utama...');
+        await client.login(setting.botToken);
+        console.log('🚀 Bot Utama Berhasil Online!');
+
+    } catch (error) {
+        console.error('❌ Error saat memulai bot:', error.message);
     }
 }
 
-// Memuat Command Handler otomatis
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-for (const file of commandFiles) {
-    const command = require(path.join(commandsPath, file));
-    client.commands.set(command.name, command);
-}
-
-// Start Bot Logic
-async function startBot() {
-    setTimeout(async () => {
-        try {
-            // Ambil token dari database
-            const tokenData = await db.Setting.findByPk('main_bot_token');
-            if (!tokenData || !tokenData.value) {
-                console.log('⚠️ Token bot utama belum disetting. Silakan login ke Dashboard untuk mengisi token.');
-                return;
-            }
-            client.login(tokenData.value).catch(err => console.error('❌ Gagal login bot:', err.message));
-        } catch (error) {
-            console.error('❌ Error saat memulai bot:', error);
-        }
-    }, 2500); // Kasih jeda biar SQLite selesai sinkronisasi tabel
-}
-
+// Jalankan fungsi
 startBot();
