@@ -1,9 +1,36 @@
-module.exports = (sequelize, DataTypes) => {
-    return sequelize.define('User', {
-        // Karena 1 user bisa belanja di banyak server dengan saldo beda-beda, 
-        // kita jadiin user_id dan guild_id sebagai Primary Key gabungan.
-        user_id: { type: DataTypes.STRING, primaryKey: true },
-        guild_id: { type: DataTypes.STRING, primaryKey: true },
-        balance: { type: DataTypes.INTEGER, defaultValue: 0 }
-    }, { timestamps: false });
-};
+const { DataTypes } = require('sequelize');
+const sequelize = require('../db');
+
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  discordId: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false
+  },
+  username: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  saldo: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  role: {
+    type: DataTypes.STRING,
+    defaultValue: 'user' // 'admin' atau 'user'
+  }
+}, {
+  tableName: 'users',
+  timestamps: true
+});
+
+module.exports = User;
