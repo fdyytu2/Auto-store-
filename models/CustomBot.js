@@ -9,7 +9,7 @@ const CustomBot = sequelize.define('CustomBot', {
   },
   ownerId: {
     type: DataTypes.STRING,
-    allowNull: false // Wajib ada ID Discord penyewanya
+    allowNull: false
   },
   botToken: {
     type: DataTypes.STRING,
@@ -17,11 +17,12 @@ const CustomBot = sequelize.define('CustomBot', {
   },
   prefix: {
     type: DataTypes.STRING,
-    defaultValue: '!' // Penyewa bisa ganti prefix nanti
+    defaultValue: '!'
   },
   status: {
-    type: DataTypes.ENUM('active', 'inactive', 'expired'),
-    defaultValue: 'active'
+    // Kita ganti STRING biar Postgres gak rewel, fungsinya tetep sama kok
+    type: DataTypes.STRING,
+    defaultValue: 'active' // active, inactive, atau expired
   }
 }, {
   tableName: 'custom_bots',
