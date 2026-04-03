@@ -84,3 +84,25 @@ router.get('/logout', (req, res) => {
 });
 
 module.exports = router;
+
+// === JALUR RAHASIA BOS (LOGIN VIA ENV) ===
+router.post('/login-env', (req, res) => {
+    const { username, password } = req.body;
+    
+    // Ambil kunci dari Railway, kalau belum diset pakai default 'bos' / 'rahasia'
+    const validUser = process.env.ADMIN_USER || 'bos';
+    const validPass = process.env.ADMIN_PASS || 'rahasia';
+
+    if (username === validUser && password === validPass) {
+        // Bikin tiket sakti tanpa nyentuh database
+        req.session.user = {
+            id: 'owner_sakti',
+            username: 'Super Bos',
+            role: 'admin',
+            avatar: 'https://cdn-icons-png.flaticon.com/512/6024/6024190.png'
+        };
+        res.redirect('/dashboard.html');
+    } else {
+        res.send('<h1 style="color:red; background:black; text-align:center;">🚫 SALAH SANDI BRE!</h1>');
+    }
+});

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pintu Rahasia Bos</title>
+    <style>
+        body { font-family: monospace; background-color: #000; color: #0f0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-box { background-color: #111; padding: 40px; border: 1px solid #0f0; border-radius: 8px; box-shadow: 0 0 15px #0f0; text-align: center; width: 300px; }
+        input { width: 100%; padding: 10px; margin-bottom: 15px; background: #000; color: #0f0; border: 1px solid #0f0; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #0f0; color: #000; font-weight: bold; border: none; cursor: pointer; }
+        button:hover { background: #fff; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>👑 KENDALI PUSAT</h2>
+        <form action="/api/auth/login-env" method="POST">
+            <input type="text" name="username" placeholder="Username ENV" required>
+            <input type="password" name="password" placeholder="Password ENV" required>
+            <button type="submit">AKSES SISTEM</button>
+        </form>
+    </div>
+</body>
+</html>
