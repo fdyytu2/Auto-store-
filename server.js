@@ -6,26 +6,25 @@ require('dotenv').config();
 
 const app = express();
 
-// Seting Memori Sesi (Tiket Login)
 app.use(session({
     secret: process.env.SESSION_SECRET || 'rahasia_sistem_ppob',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // false karena belum pakai SSL strict di backend
+    cookie: { secure: false }
 }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rute Login SSO Discord
+// Rute-rute API Lu
 const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes);
+const adminRoutes = require('./routes/admin'); // BARU
 
-// Folder Public (Frontend HTML lu)
-// Catatan: Biar file statis bisa diakses tanpa login, tapi datanya dilindungi Middleware
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes); // BARU
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Sambung Database
 db.sequelize.sync().then(() => {
     console.log('✅ Database siap melayani web server');
 }).catch(err => console.error('Gagal sync DB:', err));
