@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Auto Store</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #1e1e24; color: white; margin: 0; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .card { background: #2b2b36; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 20px; }
+        input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #444; border-radius: 4px; background: #1e1e24; color: white; box-sizing: border-box; }
+        button { padding: 10px 15px; background: #5865F2; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        button:hover { background: #4752c4; }
+        .logout-btn { background: #ed4245; }
+        .logout-btn:hover { background: #c9383b; }
+        .btn-danger { background: #ed4245; padding: 5px 10px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: left; }
+        th { background-color: #1e1e24; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>🛠️ Auto Store Dashboard</h2>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="card">
+        <h3>🔑 Konfigurasi Engine Bot</h3>
+        <input type="password" id="botToken" placeholder="Paste Token Bot Discord Utama di sini...">
+        <button onclick="saveToken()">Simpan Token</button>
+        <p id="msgToken" style="color:#57F287; font-weight: bold;"></p>
+    </div>
+
+    <div class="card">
+        <h3>📦 Tambah Produk Baru</h3>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="guildId" placeholder="ID Server Discord (Guild ID)">
+            <input type="text" id="prodName" placeholder="Nama Produk (Misal: Diamond Lock)">
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="prodPrice" placeholder="Harga Rupiah (Misal: 15000)">
+            <input type="number" id="prodStock" placeholder="Jumlah Stok">
+        </div>
+        <button onclick="addProduct()" style="background: #57F287; color: black;">+ Tambah Barang</button>
+        <p id="msgProd" style="color:#57F287; font-weight: bold;"></p>
+
+        <h3 style="margin-top: 30px;">📋 Daftar Produk Sistem</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ID Server</th>
+                    <th>Nama Barang</th>
+                    <th>Harga (Rp)</th>
+                    <th>Stok</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="productTable">
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        // --- LOGIKA TOKEN ---
+        async function loadToken() {
+            const res = await fetch('/api/settings');
+            const data = await res.json();
+            document.getElementById('botToken').value = data.bot_token || '';
+        }
+
+        async function saveToken() {
+            const token = document.getElementById('botToken').value;
+            await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bot_token: token })
+            });
+            document.getElementById('msgToken').innerText = '✅ Token disimpan!';
+            setTimeout(() => document.getElementById('msgToken').innerText = '', 3000);
+        }
+
+        // --- LOGIKA PRODUK ---
+        async function loadProducts() {
+            const res = await fetch('/api/products');
+            const products = await res.json();
+            const tbody = document.getElementById('productTable');
+            tbody.innerHTML = '';
+            
+            products.forEach(p => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${p.guild_id}</td>
+                        <td>${p.name}</td>
+                        <td>${p.price.toLocaleString('id-ID')}</td>
+                        <td>${p.stock}</td>
+                        <td><button class="btn-danger" onclick="deleteProduct(${p.id})">Hapus</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function addProduct() {
+            const guild_id = document.getElementById('guildId').value;
+            const name = document.getElementById('prodName').value;
+            const price = document.getElementById('prodPrice').value;
+            const stock = document.getElementById('prodStock').value;
+
+            if(!guild_id || !name || !price || !stock) return alert("Isi semua form bro!");
+
+            await fetch('/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guild_id, name, price: parseInt(price), stock: parseInt(stock) })
+            });
+
+            document.getElementById('msgProd').innerText = '✅ Barang berhasil ditambahkan!';
+            setTimeout(() => document.getElementById('msgProd').innerText = '', 3000);
+            
+            // Bersihin form & reload tabel
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodPrice').value = '';
+            document.getElementById('prodStock').value = '';
+            loadProducts();
+        }
+
+        async function deleteProduct(id) {
+            if(!confirm("Yakin mau hapus barang ini?")) return;
+            await fetch(`/api/products/${id}`, { method: 'DELETE' });
+            loadProducts();
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/';
+        }
+
+        // Jalanin pas web dibuka
+        loadToken();
+        loadProducts();
+    </script>
+</body>
+</html>
