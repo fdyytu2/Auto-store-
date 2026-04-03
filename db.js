@@ -3,9 +3,11 @@ require('dotenv').config();
 
 let sequelize;
 
-if (process.env.POSTGRES_URL) {
-  // Mode Produksi (Railway)
-  sequelize = new Sequelize(process.env.POSTGRES_URL, {
+// Cek apakah ada URL Database dari Railway
+if (process.env.POSTGRES_URL || process.env.DATABASE_URL) {
+  const dbUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  
+  sequelize = new Sequelize(dbUrl, {
     dialect: 'postgres',
     protocol: 'postgres',
     dialectOptions: {
@@ -16,15 +18,15 @@ if (process.env.POSTGRES_URL) {
     },
     logging: false
   });
-  console.log('📡 Connected to PostgreSQL (Cloud)');
+  console.log('📡 [DATABASE] Menggunakan PostgreSQL (Railway Mode)');
 } else {
-  // Mode Lokal (Termux) - Tetap pakai SQLite biar lu bisa ngetik tanpa kuota
+  // Kalau di Termux (Lokal), baru boleh pake SQLite
   sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: './database.sqlite',
     logging: false
   });
-  console.log('📁 Connected to SQLite (Local)');
+  console.log('📁 [DATABASE] Menggunakan SQLite (Local Mode)');
 }
 
 module.exports = sequelize;
