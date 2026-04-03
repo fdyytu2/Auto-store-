@@ -1,32 +1,20 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-let sequelize;
+// Railway otomatis kasih DATABASE_URL, tapi kita siapin fallback pake link yang lu kasih
+const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || 'postgresql://postgres:lEgVppLzpmGOHyDjsPYgrwQALwhSocYL@postgres.railway.internal:5432/railway';
 
-// Cek apakah ada URL Database dari Railway
-if (process.env.POSTGRES_URL || process.env.DATABASE_URL) {
-  const dbUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
-  
-  sequelize = new Sequelize(dbUrl, {
-    dialect: 'postgres',
-    protocol: 'postgres',
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    },
-    logging: false
-  });
-  console.log('📡 [DATABASE] Menggunakan PostgreSQL (Railway Mode)');
-} else {
-  // Kalau di Termux (Lokal), baru boleh pake SQLite
-  sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: './database.sqlite',
-    logging: false
-  });
-  console.log('📁 [DATABASE] Menggunakan SQLite (Local Mode)');
-}
+console.log('📡 [DATABASE] Menghubungkan ke PostgreSQL...');
+
+const sequelize = new Sequelize(dbUrl, {
+  dialect: 'postgres',
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
+  }
+});
 
 module.exports = sequelize;
