@@ -1,10 +1,10 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-// Railway otomatis kasih DATABASE_URL, tapi kita siapin fallback pake link yang lu kasih
-const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || 'postgresql://postgres:lEgVppLzpmGOHyDjsPYgrwQALwhSocYL@postgres.railway.internal:5432/railway';
+// HANYA GUNAKAN LINK PUBLIC VIP! Gak ada lagi cerita .internal
+const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:lEgVppLzpmGOHyDjsPYgrwQALwhSocYL@junction.proxy.rlwy.net:53059/railway';
 
-console.log('📡 [DATABASE] Menghubungkan ke PostgreSQL...');
+console.log('📡 [DATABASE] Menghubungkan ke PostgreSQL Public VIP...');
 
 const sequelize = new Sequelize(dbUrl, {
   dialect: 'postgres',

@@ -1,5 +1,6 @@
 const { Sequelize } = require('sequelize');
 const sequelize = require('../db');
+require('dotenv').config();
 
 // Import semua model
 const User = require('./User');
@@ -11,23 +12,45 @@ const Guild = require('./Guild');
 const Setting = require('./Setting');
 const Subscription = require('./Subscription');
 
-// Masukin ke objek db
-const db = {
-  sequelize,
-  Sequelize,
-  User,
-  Product,
-  Transaction,
-  Deposit,
-  CustomBot,
-  Guild,
-  Setting,
-  Subscription
+const db = { sequelize, Sequelize, User, Product, Transaction, Deposit, CustomBot, Guild, Setting, Subscription };
+
+// ==========================================
+// FUNGSI WEBHOOK DENGAN TANGGAL & JAM (WIB)
+// ==========================================
+const sendWebhook = async (message, isError = false) => {
+    const webhookUrl = process.env.DISCORD_WEBHOOK;
+    if (!webhookUrl) return;
+
+    // Ambil waktu sekarang di Indonesia (WIB)
+    const time = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+    const prefix = isError ? '🚨 **[ERROR DASHBOARD]**' : '✅ **[SUCCESS DASHBOARD]**';
+    
+    try {
+        await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content: `${prefix} - 🗓️ \`${time}\`\n${message}`
+            })
+        });
+    } catch (e) {
+        console.error('Gagal kirim webhook Discord:', e);
+    }
 };
 
-// Sinkronisasi database
+// ==========================================
+// SINKRONISASI DATABASE & LAPORAN
+// ==========================================
 db.sequelize.sync({ alter: true })
-  .then(() => console.log('✅ Semua tabel database berhasil disinkronkan!'))
-  .catch(err => console.error('❌ Gagal sinkronisasi database:', err));
+  .then(() => {
+      const msg = '```js\nSemua tabel database berhasil disinkronkan ke PostgreSQL!\n```';
+      console.log('✅ Berhasil sinkronisasi database');
+      sendWebhook(msg, false); // Kirim laporan sukses ke Discord!
+  })
+  .catch(err => {
+      const msg = `Gagal sinkronisasi database:\n\`\`\`js\n${err.stack || err.message}\n\`\`\``;
+      console.error(msg);
+      sendWebhook(msg, true); // Kirim laporan error ke Discord
+  });
 
 module.exports = db;
