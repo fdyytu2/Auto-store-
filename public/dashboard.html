@@ -51,8 +51,12 @@
 
     <div class="container">
         <div class="card">
-            <div class="card-header">
-                <i class="fas fa-robot" style="color: var(--primary); font-size: 20px;"></i><h2 style="margin:0;">Mesin Bot Pusat</h2>
+            <div class="card-header" style="justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-robot" style="color: var(--primary); font-size: 20px;"></i>
+                    <h2 style="margin:0;">Mesin Bot Pusat</h2>
+                </div>
+                <span id="mainBotBadge" class="badge bg-inactive">Cek Status...</span>
             </div>
             <div class="input-group">
                 <label>Token API Bot Utama</label>
@@ -90,7 +94,6 @@
     <script>
         window.onload = async () => {
             try {
-                // 1. Ambil Profil Lu
                 const authRes = await fetch('/api/user/me');
                 if (!authRes.ok) return window.location.href = '/login.html';
                 const authData = await authRes.json();
@@ -100,18 +103,38 @@
                 document.getElementById('user-name').innerText = authData.user.username;
                 document.getElementById('user-role').innerHTML = `<i class="fas fa-shield-alt"></i> Role: ${authData.user.role.toUpperCase()}`;
                 
-                // 2. Ambil Settingan Token
                 const setRes = await fetch('/api/admin/settings');
                 const setData = await setRes.json();
                 if(setData.botToken) document.getElementById('botToken').value = setData.botToken;
 
-                // 3. Load Daftar Penyewa
                 loadTenants();
+                
+                // Minta radar mulai ngecek bot
+                cekStatusBot();
+                // Bikin radar ngecek otomatis tiap 5 detik
+                setInterval(cekStatusBot, 5000); 
+
             } catch (e) {
                 console.error('Error init:', e);
-                document.getElementById('user-name').innerText = "Gagal memuat profil";
             }
         };
+
+        // FUNGSI RADAR STATUS
+        async function cekStatusBot() {
+            try {
+                const res = await fetch('/api/admin/bot-status');
+                const data = await res.json();
+                const badge = document.getElementById('mainBotBadge');
+                
+                if (data.online) {
+                    badge.className = 'badge bg-active';
+                    badge.innerHTML = '<i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i> ONLINE';
+                } else {
+                    badge.className = 'badge bg-inactive';
+                    badge.innerHTML = '<i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i> OFFLINE';
+                }
+            } catch(e) { console.log('Gagal cek status bot'); }
+        }
 
         async function loadTenants() {
             try {
@@ -132,12 +155,33 @@
                             <td><i class="fab fa-discord" style="color:#5865F2;"></i> ${bot.ownerId}</td>
                             <td><code style="background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:4px;">${bot.prefix}</code></td>
                             <td><span class="badge ${statusClass}"><i class="fas fa-circle" style="font-size:8px; margin-right:4px;"></i>${bot.status.toUpperCase()}</span></td>
-                            <td><button class="btn btn-logout" style="padding:6px 12px;"><i class="fas fa-power-off"></i></button></td>
+                            <td>
+                                <button class="btn btn-logout" style="padding:6px 12px; margin-right:5px;" title="Matikan Bot"><i class="fas fa-power-off"></i></button>
+                                <button class="btn" style="background: var(--danger); color: white; padding:6px 12px;" onclick="hapusTenant('${bot.ownerId}')" title="Hapus Data"><i class="fas fa-trash"></i></button>
+                            </td>
                         </tr>
                     `;
                 });
             } catch (e) {
                 document.getElementById('tenant-list').innerHTML = '<tr><td colspan="4" style="color:var(--danger);text-align:center; padding: 20px;">Gagal memuat data penyewa.</td></tr>';
+            }
+        }
+
+        async function hapusTenant(ownerId) {
+            if (!confirm('Lu yakin mau hapus bot penyewa ini? Datanya bakal musnah dari database!')) return;
+            
+            try {
+                const res = await fetch(`/api/admin/delete-tenant/${ownerId}`, { method: 'DELETE' });
+                const result = await res.json();
+                
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                    loadTenants(); // Refresh tabel otomatis
+                } else {
+                    alert('❌ Gagal menghapus: ' + result.error);
+                }
+            } catch (err) {
+                alert('❌ Server error.');
             }
         }
 
@@ -158,6 +202,7 @@
                 
                 if (result.success) {
                     tampilStatus("<i class='fas fa-check-circle'></i> " + result.message, "success");
+                    cekStatusBot(); // Langsung update badge seketika
                 } else {
                     tampilStatus("<i class='fas fa-exclamation-triangle'></i> Gagal: " + result.error, "error");
                 }
