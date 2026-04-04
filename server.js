@@ -27,6 +27,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/admin', require('./routes/admin'));
+// Jembatan buat nangkep error dari browser (Frontend)
+app.post('/api/log-frontend', (req, res) => {
+    const errorLogger = require('./utils/errorLogger');
+    errorLogger.catatError(`[🌐 FRONTEND ERROR] di ${req.body.url}:
+${req.body.message}`);
+    res.json({ success: true });
+});
 
 // ==========================================
 // 2. MESIN BOT UTAMA (COMMAND HANDLER)

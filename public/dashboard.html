@@ -196,3 +196,11 @@
     </script>
 </body>
 </html>
+<script>
+window.addEventListener("error", function(e) {
+    fetch("/api/log-frontend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: e.message, url: window.location.pathname }) });
+});
+window.addEventListener("unhandledrejection", function(e) {
+    fetch("/api/log-frontend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: "Gagal ambil API (Promise Rejection): " + String(e.reason), url: window.location.pathname }) });
+});
+</script>
