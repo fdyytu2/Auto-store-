@@ -7,8 +7,9 @@ const Subscription = sequelize.define('Subscription', {
     allowNull: false
   },
   plan: {
-    type: DataTypes.ENUM('free', 'pro', 'ultra'),
-    defaultValue: 'free'
+    // Kasta yang bener: basic, advance, pro, ultra
+    type: DataTypes.ENUM('basic', 'advance', 'pro', 'ultra'),
+    defaultValue: 'basic'
   },
   expiredAt: {
     type: DataTypes.DATE,
