@@ -20,8 +20,8 @@ app.use(cors({
 // ==========================================
 app.use(session({
     secret: process.env.SESSION_SECRET || 'rahasia_sistem_ppob',
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     cookie: { secure: true, sameSite: 'none', secure: false }
 }));
 
