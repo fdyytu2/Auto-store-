@@ -21,6 +21,7 @@ const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin'); // BARU
 
 app.use('/api/auth', authRoutes);
+app.use('/api/user', require('./routes/user'));
 app.use('/api/admin', adminRoutes); // BARU
 
 app.use(express.static(path.join(__dirname, 'public')));
