@@ -1,45 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { CustomBot, Subscription } = require('../models');
 
-// Ambil data settingan user saat ini
-router.get('/config', async (req, res) => {
-    try {
-        const userId = req.session.passport.user.id;
-        const botConfig = await CustomBot.findOne({ where: { ownerId: userId } });
-        const sub = await Subscription.findOne({ where: { userId } });
-        
-        res.json({
-            config: botConfig || {},
-            plan: sub ? sub.plan : 'basic'
+// Rute buat ngasih tau web frontend siapa yang lagi login
+router.get('/me', (req, res) => {
+    // Cek apakah ada sesi user (dari login Discord atau Pintu Bos)
+    if (req.session && req.session.user) {
+        res.json({ 
+            success: true, 
+            user: req.session.user 
         });
-    } catch (err) {
-        res.status(500).json({ error: 'Gagal ambil data' });
-    }
-});
-
-// Simpan settingan (Live Stock & AI Key)
-router.post('/save-config', async (req, res) => {
-    try {
-        const userId = req.session.passport.user.id;
-        const { liveStockChannel, botToken } = req.body;
-
-        // Cari atau bikin baru kalau belum ada
-        const [config, created] = await CustomBot.findOrCreate({
-            where: { ownerId: userId },
-            defaults: { liveStockChannel, botToken }
-        });
-
-        if (!created) {
-            config.liveStockChannel = liveStockChannel;
-            // Bot token cuma boleh diupdate kalau Ultra (nanti ditambahin proteksinya)
-            config.botToken = botToken; 
-            await config.save();
-        }
-
-        res.json({ message: 'Settingan berhasil disimpan, bre!' });
-    } catch (err) {
-        res.status(500).json({ error: 'Gagal simpan data' });
+    } else {
+        res.status(401).json({ success: false, message: 'Lu belum login bre!' });
     }
 });
 
