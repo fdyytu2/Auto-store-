@@ -7,12 +7,14 @@ const User = require('./User');
 const Product = require('./Product');
 const Transaction = require('./Transaction');
 const Deposit = require('./Deposit');
-const CustomBot = require('./CustomBot');
+const CustomBot, Deposit, Transaction = require('./CustomBot, Deposit, Transaction');
+const Deposit = require('./Deposit');
+const Transaction = require('./Transaction');
 const Guild = require('./Guild');
 const Setting = require('./Setting');
 const Subscription = require('./Subscription');
 
-const db = { sequelize, Sequelize, User, Product, Transaction, Deposit, CustomBot, Guild, Setting, Subscription };
+const db = { sequelize, Sequelize, User, Product, Transaction, Deposit, CustomBot, Deposit, Transaction, Guild, Setting, Subscription };
 
 // ==========================================
 // FUNGSI WEBHOOK DENGAN TANGGAL & JAM (WIB)
