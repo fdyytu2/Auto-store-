@@ -3,83 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PPOB Super Admin</title>
+    <title>PPOB Auto Store - Discord Bot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; padding: 20px; }
-        .container { max-width: 600px; margin: 40px auto; background-color: #1e1e1e; padding: 30px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.5); border-top: 4px solid #4CAF50; }
-        h2 { text-align: center; color: #4CAF50; margin-top: 0; }
-        p.subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #ccc; }
-        input[type="text"] { width: 100%; padding: 12px; border: 1px solid #333; border-radius: 6px; background-color: #2a2a2a; color: #fff; box-sizing: border-box; font-size: 16px; margin-bottom: 20px; }
-        input[type="text"]:focus { outline: none; border-color: #4CAF50; }
-        button { width: 100%; padding: 14px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
-        button:hover { background-color: #45a049; }
-        #status { margin-top: 20px; text-align: center; font-weight: bold; padding: 10px; border-radius: 6px; display: none; }
-        .success { background-color: rgba(76, 175, 80, 0.2); color: #4CAF50; border: 1px solid #4CAF50; }
-        .error { background-color: rgba(244, 67, 54, 0.2); color: #f44336; border: 1px solid #f44336; }
+        :root {
+            --bg-dark: #09090b;
+            --bg-card: #18181b;
+            --primary: #5865F2; /* Discord Blurple */
+            --primary-hover: #4752C4;
+            --text-main: #f8fafc;
+            --text-muted: #a1a1aa;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 0; line-height: 1.6; overflow-x: hidden; }
+        
+        /* Navbar */
+        header { position: fixed; top: 0; width: 100%; background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(10px); z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .nav-container { max-width: 1100px; margin: 0 auto; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 22px; font-weight: 800; color: white; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+        .logo i { color: var(--primary); }
+        .btn-nav-login { background: var(--primary); color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: 600; transition: 0.3s; }
+        .btn-nav-login:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        /* Hero Section */
+        .hero { padding: 160px 20px 100px; text-align: center; background: radial-gradient(circle at 50% -20%, #2e305e, var(--bg-dark)); }
+        .hero h1 { font-size: 50px; font-weight: 800; max-width: 800px; margin: 0 auto 20px; line-height: 1.2; background: -webkit-linear-gradient(#fff, #a1a1aa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 18px; color: var(--text-muted); max-width: 600px; margin: 0 auto 40px; }
+        .btn-hero { display: inline-flex; align-items: center; gap: 10px; background: var(--primary); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-size: 18px; font-weight: 600; transition: 0.3s; box-shadow: 0 10px 25px rgba(88, 101, 242, 0.4); }
+        .btn-hero:hover { background: var(--primary-hover); transform: translateY(-3px); box-shadow: 0 15px 35px rgba(88, 101, 242, 0.6); }
+
+        /* Features Section */
+        .features { padding: 80px 20px; max-width: 1100px; margin: 0 auto; }
+        .section-title { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 50px; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .card { background: var(--bg-card); padding: 30px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+        .card:hover { transform: translateY(-10px); border-color: rgba(88, 101, 242, 0.5); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card-icon { width: 50px; height: 50px; background: rgba(88, 101, 242, 0.1); color: var(--primary); display: flex; justify-content: center; align-items: center; border-radius: 12px; font-size: 24px; margin-bottom: 20px; }
+        .card h3 { margin: 0 0 15px; font-size: 20px; }
+        .card p { margin: 0; color: var(--text-muted); font-size: 15px; }
+
+        /* Footer */
+        footer { text-align: center; padding: 40px 20px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 50px; color: var(--text-muted); font-size: 14px; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 36px; }
+            .hero { padding: 120px 20px 60px; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>⚙️ Super Admin Panel</h2>
-        <p class="subtitle">Pusat Kendali Bot PPOB Utama</p>
-        
-        <label for="botToken">Token Bot Utama:</label>
-        <input type="text" id="botToken" placeholder="Paste Token Bot lu di sini...">
-        
-        <button onclick="simpanToken()">🚀 Simpan & Nyalakan Bot</button>
-        
-        <div id="status"></div>
-    </div>
+    <header>
+        <div class="nav-container">
+            <a href="/" class="logo"><i class="fas fa-store"></i> AutoStore</a>
+            <a href="/api/auth/login" class="btn-nav-login">Login</a>
+        </div>
+    </header>
 
-    <script>
-        // Cek apakah token udah ada di database pas web dibuka
-        window.onload = async () => {
-            try {
-                const res = await fetch('/api/settings');
-                const data = await res.json();
-                if(data.botToken) document.getElementById('botToken').value = data.botToken;
-            } catch (e) { console.log('Gagal ambil data awal'); }
-        };
+    <section class="hero">
+        <h1>Otomatisasi Bisnis PPOB di Server Discord-mu</h1>
+        <p>Sistem manajemen bot pintar untuk jualan pulsa, diamond, dan voucher game. Kelola stok, laporan, dan AI Assistant dalam satu klik.</p>
+        <a href="/api/auth/login" class="btn-hero"><i class="fab fa-discord"></i> Tambahkan ke Discord</a>
+    </section>
 
-        async function simpanToken() {
-            const token = document.getElementById('botToken').value;
-            const statusDiv = document.getElementById('status');
-            
-            if (!token) {
-                tampilStatus("❌ Token nggak boleh kosong bro!", "error");
-                return;
-            }
+    <section class="features">
+        <h2 class="section-title">Fitur Unggulan</h2>
+        <div class="feature-grid">
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-boxes"></i></div>
+                <h3>Live Stock Otomatis</h3>
+                <p>Nggak perlu lagi update stok manual. Bot akan memantau dan mengirim update stok real-time langsung ke channel Discord-mu.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-brain"></i></div>
+                <h3>AI Assistant (Gemini)</h3>
+                <p>Dilengkapi kecerdasan buatan dari Google Gemini. Bot bisa melayani pembeli, menjawab keluhan, layaknya admin manusia 24/7.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon"><i class="fas fa-robot"></i></div>
+                <h3>Custom Bot Activity</h3>
+                <p>Eksklusif untuk paket Ultra. Gunakan nama bot-mu sendiri, atur status "Playing", dan jadikan toko Discord-mu lebih profesional.</p>
+            </div>
+        </div>
+    </section>
 
-            tampilStatus("⏳ Menyimpan ke Database PostgreSQL...", "");
-            
-            try {
-                const res = await fetch('/api/update-token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ botToken: token })
-                });
-                
-                const result = await res.json();
-                
-                if (result.success) {
-                    tampilStatus(result.message, "success");
-                    // Opsi tambahan: Lu bisa tambahin notif ke Discord lu dari server.js nanti
-                } else {
-                    tampilStatus("❌ Gagal: " + result.error, "error");
-                }
-            } catch (err) {
-                tampilStatus("❌ Server error atau koneksi terputus.", "error");
-            }
-        }
+    <footer>
+        <p>&copy; 2026 PPOB Auto Store. Dibuat oleh Sultan.</p>
+    </footer>
 
-        function tampilStatus(pesan, tipe) {
-            const statusDiv = document.getElementById('status');
-            statusDiv.style.display = 'block';
-            statusDiv.className = tipe;
-            statusDiv.innerHTML = pesan;
-        }
-    </script>
 </body>
 </html>
