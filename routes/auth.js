@@ -42,7 +42,7 @@ router.get('/callback', async (req, res) => {
 
         // FIX SESI: Sekarang udah sinkron sama middlewares/auth.js lu
         req.session.user = { id: user.discordId, username: user.username, role: user.role };
-        res.redirect('/user-panel.html');
+        res.redirect('https://frontend-sultan.vercel.app');
 
     } catch (err) {
         errorLogger.catatError(`Login Discord Error: ${err.message}`);
@@ -70,7 +70,7 @@ router.post('/login-env', (req, res) => {
         
         // Pindahin ke halaman admin dashboard lu
         // (Sesuaikan sama nama file dashboard admin lu, ini gua asumsikan dashboard.html)
-        res.redirect('/dashboard.html'); 
+        res.redirect('https://frontend-sultan.vercel.app'); 
     } else {
         res.send("❌ Password salah bre! Siapa lu?");
     }
@@ -81,7 +81,7 @@ router.post('/login-env', (req, res) => {
 // ==========================================
 router.get('/logout', (req, res) => {
     req.session.destroy();
-    res.redirect('/login.html');
+    res.redirect('https://frontend-sultan.vercel.app');
 });
 
 module.exports = router;

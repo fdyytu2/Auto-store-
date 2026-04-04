@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
@@ -8,6 +9,11 @@ const errorLogger = require('./utils/errorLogger'); // Pakai logger yang udah ki
 require('dotenv').config();
 
 const app = express();
+app.set('trust proxy', 1);
+app.use(cors({
+  origin: ['https://frontend-sultan.vercel.app', 'http://localhost:5173'],
+  credentials: true
+}));
 
 // ==========================================
 // 1. PENGATURAN WEB & SESSION
@@ -16,7 +22,7 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'rahasia_sistem_ppob',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false }
+    cookie: { secure: true, sameSite: 'none', secure: false }
 }));
 
 app.use(express.json());
