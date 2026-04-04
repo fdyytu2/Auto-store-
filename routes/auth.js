@@ -1,31 +1,36 @@
 const express = require('express');
-const router = express.Router();
 const db = require('../models');
+const router = express.Router();
+const errorLogger = require('../utils/errorLogger');
 
-// Ambil kunci dari environment
-const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const REDIRECT_URI = process.env.DISCORD_REDIRECT_URI; // Contoh: https://[domain-railway]/api/auth/callback
-
-// 1. Lempar user ke halaman login Discord
+// 1. Rute pas user ngeklik "Login"
 router.get('/login', (req, res) => {
-    const url = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify%20email`;
+    const clientId = process.env.DISCORD_CLIENT_ID;
+    const redirectUri = process.env.DISCORD_CALLBACK_URL;
+    
+    // Cegat kalau KTP dari Railway masih kosong
+    if (!clientId || !redirectUri) {
+        errorLogger.catatError("Sistem gagal baca DISCORD_CLIENT_ID atau DISCORD_CALLBACK_URL dari Railway.");
+        return res.status(500).send("🚨 Sistem sedang gangguan config. Lapor ke Admin!");
+    }
+
+    const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify`;
     res.redirect(url);
 });
 
-// 2. Discord ngelempar balik user bawa "Code" rahasia
+// 2. Rute pas Discord ngebalikin data user (Callback)
 router.get('/callback', async (req, res) => {
     const code = req.query.code;
-    if (!code) return res.redirect('/login.html?error=batal_login');
+    if (!code) return res.send("❌ Login dibatalkan atau gagal dapet kode dari Discord.");
 
     try {
-        // Tuker Code dengan Access Token
+        // Tukar kode dengan Token Akses
         const params = new URLSearchParams({
-            client_id: CLIENT_ID,
-            client_secret: CLIENT_SECRET,
+            client_id: process.env.DISCORD_CLIENT_ID,
+            client_secret: process.env.DISCORD_CLIENT_SECRET,
             grant_type: 'authorization_code',
             code: code,
-            redirect_uri: REDIRECT_URI
+            redirect_uri: process.env.DISCORD_CALLBACK_URL
         });
 
         const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
@@ -35,74 +40,44 @@ router.get('/callback', async (req, res) => {
         });
         const tokenData = await tokenRes.json();
 
-        if (!tokenData.access_token) return res.redirect('/login.html?error=gagal_token');
+        if (tokenData.error) {
+            errorLogger.catatError(`Gagal tukar token: ${JSON.stringify(tokenData)}`);
+            return res.send("❌ Gagal verifikasi token Discord. Pastikan Client Secret bener!");
+        }
 
-        // Pake Token buat ngambil data Profil Discord si Penyewa
+        // Ambil profil Discord User
         const userRes = await fetch('https://discord.com/api/users/@me', {
             headers: { authorization: `Bearer ${tokenData.access_token}` }
         });
         const userData = await userRes.json();
 
-        // SIMPAN KE DATABASE (Sesuai target Data Integrity lu!)
+        // Tentukan apakah dia Owner atau Penyewa biasa
+        const role = (userData.id === process.env.OWNER_ID) ? 'admin' : 'user';
+
+        // Simpan atau Update data user di Database lu
         const [user, created] = await db.User.findOrCreate({
             where: { discordId: userData.id },
-            defaults: {
-                username: userData.username,
-                email: userData.email,
-                saldo: 0,
-                role: 'user' // Default role
-            }
+            defaults: { username: userData.username, role: role }
         });
 
-        // Bikin tiket session
-        req.session.user = {
-            id: user.discordId,
-            username: user.username,
-            role: user.role,
-            avatar: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : null
+        // Pasang sesi login (biar dashboard mengenali user ini)
+        req.session.passport = { 
+            user: { id: user.discordId, username: user.username, role: user.role } 
         };
 
-        // Sukses? Lempar ke Dashboard!
-        if (user.role === 'admin') { res.redirect('/dashboard.html'); } else { res.redirect('/user-panel.html'); }
+        // Sukses! Lempar ke Dashboard
+        res.redirect('/user-panel.html');
 
-    } catch (error) {
-        console.error('Error saat SSO Discord:', error);
-        res.redirect('/login.html?error=server_error');
+    } catch (err) {
+        errorLogger.catatError(`Auth Crash: ${err.message}`);
+        res.status(500).send("❌ Terjadi kesalahan sistem saat login.");
     }
 });
 
-// Cek profil saat ini (buat nampil di web HTML)
-router.get('/me', (req, res) => {
-    if (!req.session.user) return res.status(401).json({ loggedIn: false });
-    res.json({ loggedIn: true, user: req.session.user });
-});
-
-// Logout
+// Rute buat Logout
 router.get('/logout', (req, res) => {
     req.session.destroy();
-    res.redirect('/login.html');
+    res.send("✅ Lu udah berhasil logout!");
 });
 
 module.exports = router;
-
-// === JALUR RAHASIA BOS (LOGIN VIA ENV) ===
-router.post('/login-env', (req, res) => {
-    const { username, password } = req.body;
-    
-    // Ambil kunci dari Railway, kalau belum diset pakai default 'bos' / 'rahasia'
-    const validUser = process.env.ADMIN_USER || 'bos';
-    const validPass = process.env.ADMIN_PASS || 'rahasia';
-
-    if (username === validUser && password === validPass) {
-        // Bikin tiket sakti tanpa nyentuh database
-        req.session.user = {
-            id: 'owner_sakti',
-            username: 'Super Bos',
-            role: 'admin',
-            avatar: 'https://cdn-icons-png.flaticon.com/512/6024/6024190.png'
-        };
-        if (user.role === 'admin') { res.redirect('/dashboard.html'); } else { res.redirect('/user-panel.html'); }
-    } else {
-        res.send('<h1 style="color:red; background:black; text-align:center;">🚫 SALAH SANDI BRE!</h1>');
-    }
-});
