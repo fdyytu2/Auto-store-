@@ -16,7 +16,7 @@ router.get('/bots', cekBos, async (req, res) => {
         const bots = await db.CustomBot.findAll();
         res.json({ success: true, data: bots || [] });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('🚨 ERROR LOGIN BOT:', err); res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -65,7 +65,7 @@ router.post('/control-main-bot', cekBos, async (req, res) => {
         }
 
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('🚨 ERROR LOGIN BOT:', err); res.status(500).json({ success: false, error: err.message });
     }
 });
 

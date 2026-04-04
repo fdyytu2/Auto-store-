@@ -16,7 +16,7 @@ module.exports = {
                 intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
             });
 
-            client.once('ready', () => {
+            client.once('clientReady', () => {
                 console.log(`🚀 Custom Bot [${client.user.tag}] berhasil online!`);
             });
 

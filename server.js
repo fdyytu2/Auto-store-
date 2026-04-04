@@ -70,7 +70,7 @@ botClient.on('messageCreate', (message) => {
     }
 });
 
-botClient.once('ready', () => {
+botClient.once('clientReady', () => {
     console.log(`🤖 Bot Utama [${botClient.user.tag}] Berhasil Online!`);
     errorLogger.catatError('✅ Sistem Bot & Web Dashboard berhasil menyala bersamaan!');
 });
