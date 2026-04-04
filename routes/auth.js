@@ -63,7 +63,7 @@ router.get('/callback', async (req, res) => {
         };
 
         // Sukses? Lempar ke Dashboard!
-        res.redirect('/dashboard.html');
+        if (user.role === 'admin') { res.redirect('/dashboard.html'); } else { res.redirect('/user-panel.html'); }
 
     } catch (error) {
         console.error('Error saat SSO Discord:', error);
@@ -101,7 +101,7 @@ router.post('/login-env', (req, res) => {
             role: 'admin',
             avatar: 'https://cdn-icons-png.flaticon.com/512/6024/6024190.png'
         };
-        res.redirect('/dashboard.html');
+        if (user.role === 'admin') { res.redirect('/dashboard.html'); } else { res.redirect('/user-panel.html'); }
     } else {
         res.send('<h1 style="color:red; background:black; text-align:center;">🚫 SALAH SANDI BRE!</h1>');
     }
