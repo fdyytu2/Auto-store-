@@ -30,17 +30,40 @@ router.get('/settings', cekBos, async (req, res) => {
     }
 });
 
-// 3. Rute Simpan Token Bot Utama
-router.post('/update-main-bot', cekBos, async (req, res) => {
+// 3. Rute Kontrol Mesin Bot Utama (Start, Stop, Set Activity)
+router.post('/control-main-bot', cekBos, async (req, res) => {
     try {
-        const { token } = req.body;
-        const [setting] = await db.Setting.findOrCreate({ where: { id: 1 } });
-        setting.botToken = token;
-        await setting.save();
-        
-        // Nanti logika start bot Discord di-trigger di sini
-        
-        res.json({ success: true, message: "Token berhasil disimpan ke Database!" });
+        const { action, token, activity } = req.body;
+        const bot = global.mainBot; // Ambil mesin bot dari server.js
+
+        // Simpan token ke database tiap kali ada perubahan
+        if (token) {
+            const [setting] = await db.Setting.findOrCreate({ where: { id: 1 } });
+            setting.botToken = token;
+            await setting.save();
+        }
+
+        if (action === 'start') {
+            if (bot.isReady()) return res.json({ success: false, error: "Bot sudah menyala bos!" });
+            if (!token) return res.json({ success: false, error: "Token belum diisi!" });
+            
+            await bot.login(token);
+            if (activity) bot.user.setActivity(activity);
+            return res.json({ success: true, message: "🚀 Bot berhasil diterbangkan!" });
+            
+        } else if (action === 'stop') {
+            if (!bot.isReady()) return res.json({ success: false, error: "Bot emang lagi mati." });
+            
+            bot.destroy(); // Putus koneksi dari Discord
+            return res.json({ success: true, message: "🛑 Bot berhasil dimatikan!" });
+            
+        } else if (action === 'activity') {
+            if (!bot.isReady()) return res.json({ success: false, error: "Nyalain bot dulu baru bisa ganti status!" });
+            
+            bot.user.setActivity(activity || "Jualan PPOB Termurah");
+            return res.json({ success: true, message: "🎮 Status 'Playing' berhasil diubah!" });
+        }
+
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

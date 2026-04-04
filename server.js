@@ -42,6 +42,7 @@ const botClient = new Client({
     intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent ] 
 });
 
+global.mainBot = botClient;
 botClient.commands = new Collection();
 // Baca semua file command
 if (fs.existsSync('./commands')) {
