@@ -94,9 +94,7 @@ botClient.once('clientReady', () => {
 // ==========================================
 db.sequelize.sync({ alter: true }).then(async () => {
     console.log('✅ Database siap!');
-    // BOM MINI: Bikin ulang tabel Setting dari nol biar kolomnya lengkap
-    ).then(() => console.log('💣 Tabel Setting berhasil di-reset bersih!'));
-    }
+    
 
     // AUTO ANGKAT SULTAN JADI ADMIN
     db.User.findOne({ where: { username: 'kentos5093' } }).then(user => {
