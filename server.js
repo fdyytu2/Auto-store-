@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
+const passport = require('passport');
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const db = require('./models');
 const errorLogger = require('./utils/errorLogger'); // Pakai logger yang udah kita bikin
@@ -24,9 +25,11 @@ app.use(session({
     secret: process.env.SESSION_SECRET || 'rahasia_sistem_ppob',
     resave: true,
     saveUninitialized: true,
-    cookie: { secure: true, sameSite: 'none', secure: false }
+    cookie: { secure: true, sameSite: 'none', httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }
 }));
 
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
