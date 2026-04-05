@@ -13,7 +13,7 @@ require('dotenv').config();
 const app = express();
 app.set('trust proxy', 1);
 app.use(cors({
-  origin: ['https://sultan.vercel.app', 'http://localhost:5173'], // Ganti sultan.vercel.app sama URL asli lu
+  origin: ['https://frontend-sultan.vercel.app', 'http://localhost:5173'], // Ganti frontend-sultan.vercel.app sama URL asli lu
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
