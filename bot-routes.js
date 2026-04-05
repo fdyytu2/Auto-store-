@@ -1,46 +1,50 @@
 const express = require('express');
 const router = express.Router();
-router.use(express.json());
-const { startBot, stopBot, getBotInfo } = require('./discord-engine');
+const { Client, GatewayIntentBits } = require('discord.js');
 const { BotConfig } = require('./db');
 
-// FITUR SAKTI: AUTO-START PAS TERMUX NYALA 🗿🔥
-setTimeout(async () => {
+let client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+// Ambil info bot & token yang tersimpan
+router.get('/info', async (req, res) => {
   try {
     const config = await BotConfig.findByPk(1);
-    if (config && config.token) {
-      console.log("🤖 [AUTO-START] Menghidupkan bot dari database...");
-      await startBot(config.token);
-      console.log("✅ [AUTO-START] Bot Master Berhasil Mengudara!");
-    }
-  } catch (err) {
-    console.log("⚠️ [AUTO-START] Gagal konek/Bot belum di-set.");
-  }
-}, 3000); // Tunggu 3 detik biar database konek dulu
-
-router.get('/info', async (req, res) => {
-  const info = getBotInfo();
-  const config = await BotConfig.findByPk(1);
-  res.json({ token: config ? config.token : null, info });
+    const botInfo = client.user ? {
+      name: client.user.username,
+      avatar: client.user.displayAvatarURL(),
+      status: "Online"
+    } : null;
+    res.json({ token: config?.token || null, info: botInfo });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/add', async (req, res) => {
+// PASANG TOKEN (Bot Online)
+router.post('/add', express.json(), async (req, res) => {
   const { token } = req.body;
   try {
-    const info = await startBot(token);
-    await BotConfig.upsert({ id: 1, token: token }); // Simpan ke Postgres
-    console.log("💾 [DB] Token Master Berhasil Disemen di Railway!");
-    res.json({ success: true, info });
-  } catch (err) {
-    res.status(400).json({ error: "Token Gak Valid!" });
-  }
+    await client.login(token);
+    await BotConfig.upsert({ id: 1, token });
+    res.json({ info: { name: client.user.username, avatar: client.user.displayAvatarURL(), status: "Online" } });
+  } catch (err) { res.status(400).json({ error: "Token Invalid!" }); }
 });
 
+// STOP BOT (Cuma Offline, Token Aman di DB)
+router.post('/stop', async (req, res) => {
+  try {
+    if (client.user) client.destroy(); 
+    client = new Client({ intents: [GatewayIntentBits.Guilds] });
+    res.json({ message: "🛑 Bot Berhasil Offline!" });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE TOKEN (Baru deh hapus dari database)
 router.post('/delete', async (req, res) => {
-  stopBot();
-  await BotConfig.destroy({ where: { id: 1 } }); // Hapus dari Postgres
-  console.log("🗑️ [DB] Token Dihapus dari Railway.");
-  res.json({ success: true });
+  try {
+    if (client.user) client.destroy();
+    client = new Client({ intents: [GatewayIntentBits.Guilds] });
+    await BotConfig.destroy({ where: { id: 1 } });
+    res.json({ message: "🗑️ Token Dihapus Permanen!" });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-module.exports = router;
+module.exports = { router, client };
