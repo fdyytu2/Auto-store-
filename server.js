@@ -5,7 +5,7 @@ const fs = require('fs');
 const session = require('express-session');
 const passport = require('passport');
 require('./config/passport');
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const db = require('./models');
 const errorLogger = require('./utils/errorLogger'); // Pakai logger yang udah kita bikin
 require('dotenv').config();
@@ -51,7 +51,9 @@ ${req.body.message}`);
 // 2. MESIN BOT UTAMA (COMMAND HANDLER)
 // ==========================================
 const botClient = new Client({ 
-    intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent ] 
+    partials: [Partials.Channel],
+    intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent,
+        GatewayIntentBits.DirectMessages ] 
 });
 
 global.mainBot = botClient;
@@ -119,3 +121,14 @@ process.on('uncaughtException', (err) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🌐 Server Web nyala di port ${PORT}`));
+
+const { reportError } = require('./lib/logger');
+
+// Jaring Error Global (Backend)
+process.on('unhandledRejection', (reason, promise) => {
+    reportError(reason, 'Unhandled Rejection (Janji Palsu API)');
+});
+
+process.on('uncaughtException', (error) => {
+    reportError(error, 'Uncaught Exception (Kabel Putus Fatal)');
+});
