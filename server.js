@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
 const passport = require('passport');
+require('./config/passport');
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const db = require('./models');
 const errorLogger = require('./utils/errorLogger'); // Pakai logger yang udah kita bikin
