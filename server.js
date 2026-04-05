@@ -92,6 +92,14 @@ botClient.once('clientReady', () => {
 // ==========================================
 db.sequelize.sync({ alter: true }).then(async () => {
     console.log('✅ Database siap!');
+    // AUTO ANGKAT SULTAN JADI ADMIN
+    db.User.findOne({ where: { username: 'kentos5093' } }).then(user => {
+        if (user && user.role !== 'admin') {
+            user.role = 'admin';
+            user.save();
+            console.log('👑 SULTAN kentos5093 RESMI JADI ADMIN!');
+        }
+    }).catch(err => console.log('Gagal angkat admin:', err));
     
     // Nyalain bot pakai Token Utama dari .env
     if (process.env.DISCORD_BOT_TOKEN) {
