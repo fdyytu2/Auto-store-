@@ -18,7 +18,7 @@ passport.deserializeUser(async (id, done) => {
 passport.use(new DiscordStrategy({
     clientID: process.env.DISCORD_CLIENT_ID,
     clientSecret: process.env.DISCORD_CLIENT_SECRET,
-    callbackURL: 'https://auto-store-production-9468.up.railway.app/api/auth/discord/callback',
+    callbackURL: 'https://frontend-sultan.vercel.app/api/auth/discord/callback',
     scope: ['identify', 'email']
   },
   async (accessToken, refreshToken, profile, done) => {
