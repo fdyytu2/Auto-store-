@@ -1,51 +1,44 @@
 const express = require('express');
 const router = express.Router();
 
-// Middleware: Satpam khusus ngecek KTP Admin
+// Middleware Satpam Admin
 const isAdmin = (req, res, next) => {
     if (req.isAuthenticated() && req.user && req.user.role === 'admin') {
         return next();
     }
-    return res.status(403).json({ success: false, message: 'Akses Ditolak! Khusus Sultan (Admin).' });
+    return res.status(403).json({ success: false, message: 'Akses Ditolak!' });
 };
 
-// Saklar Start/Stop Master Engine
+// Saklar Start/Stop
 router.post('/control-main-bot', isAdmin, async (req, res) => {
     const { action, token } = req.body;
-    const mainBot = global.mainBot; // Ngambil instance bot dari server.js
-
-    if (!mainBot) return res.status(500).json({ success: false, message: 'Sistem bot belum siap di server.' });
+    if (!global.mainBot) return res.status(500).json({ message: 'Mesin bot mati.' });
 
     try {
         if (action === 'start') {
-            if (!token) return res.status(400).json({ success: false, message: 'Token bot Discord wajib diisi Bos!' });
+            if (!token) return res.status(400).json({ message: 'Token kosong!' });
             
-            if (mainBot.isReady()) {
-                return res.status(200).json({ success: false, message: 'Bot Master udah online bre!' });
+            // Cek status koneksi (0 = Ready)
+            if (global.mainBot.ws.status === 0) {
+                return res.json({ success: true, message: 'Bot emang udah online Bos!' });
             }
 
-            await mainBot.login(token);
-            return res.json({ success: true, message: '🚀 Bot Master berhasil dihidupkan!' });
+            await global.mainBot.login(token);
+            return res.json({ success: true, message: '🚀 Bot Master Online!' });
 
         } else if (action === 'stop') {
-            if (!mainBot.isReady()) {
-                return res.status(200).json({ success: false, message: 'Bot Master emang lagi mati bre.' });
-            }
-
-            mainBot.destroy(); // Putus koneksi dari Discord
-            return res.json({ success: true, message: '🛑 Bot Master berhasil dimatikan!' });
-        } else {
-            return res.status(400).json({ success: false, message: 'Aksi tidak dikenal.' });
+            global.mainBot.destroy();
+            return res.json({ success: true, message: '🛑 Bot Master Offline!' });
         }
     } catch (error) {
-        console.error('Error control bot:', error);
-        return res.status(500).json({ success: false, message: `Gagal: ${error.message}` });
+        return res.status(500).json({ message: error.message });
     }
 });
 
-// Radar Status (Frontend bakal nanya ke sini tiap 5 detik)
+// Radar Status (Dibuat lebih peka)
 router.get('/bot-status', (req, res) => {
-    const isOnline = global.mainBot ? global.mainBot.isReady() : false;
+    // 0 artinya bot sedang terkoneksi sempurna ke Discord
+    const isOnline = global.mainBot && global.mainBot.ws.status === 0;
     res.json({ success: true, online: isOnline });
 });
 
