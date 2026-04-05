@@ -1,26 +1,25 @@
 const { Sequelize, DataTypes } = require('sequelize');
 require('dotenv').config();
 
-// Rahasia Railway Proxy: Gak butuh konfigurasi SSL!
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   logging: false,
   dialectOptions: {
-    keepAlive: true // Cuma butuh ini biar koneksi awet
+    ssl: { require: true, rejectUnauthorized: false }
   }
 });
 
 const BotConfig = sequelize.define('BotConfig', {
   id: { type: DataTypes.INTEGER, primaryKey: true, defaultValue: 1 },
   token: { type: DataTypes.STRING, allowNull: false }
-}, { timestamps: false });
+}, { 
+  tableName: 'BotConfigs',
+  timestamps: false 
+});
 
-// Kita cek salam sapa dulu (authenticate) sebelum bikin tabel
-sequelize.authenticate()
-  .then(() => {
-    console.log("📦 [DB] Terhubung ke Postgres Railway!");
-    return sequelize.sync();
-  })
-  .catch(err => console.error("⚠️ [DB ERROR] Gagal konek ke Railway:", err.message));
+// Paksa hapus tabel lama yang error dan bikin baru yang bener
+sequelize.sync({ force: true })
+  .then(() => console.log("📦 [DB] DATA LAMA DIHAPUS & TABEL DIBERSIHKAN!"))
+  .catch(err => console.error("⚠️ [DB ERROR]:", err.message));
 
-module.exports = { BotConfig };
+module.exports = { BotConfig, sequelize };
