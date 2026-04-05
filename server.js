@@ -92,7 +92,7 @@ botClient.once('clientReady', () => {
 // ==========================================
 // 3. STARTUP SISTEM (SYNC DB & JALANKAN)
 // ==========================================
-db.sequelize.sync({ force: true }).then(async () => {
+db.sequelize.sync({ alter: true }).then(async () => {
     console.log('✅ Database siap!');
     // AUTO ANGKAT SULTAN JADI ADMIN
     db.User.findOne({ where: { username: 'kentos5093' } }).then(user => {
