@@ -1,136 +1,86 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
-const session = require('express-session');
 const passport = require('passport');
-require('./config/passport');
-const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
-const db = require('./models');
-const errorLogger = require('./utils/errorLogger'); // Pakai logger yang udah kita bikin
+const session = require('express-session');
+const DiscordStrategy = require('passport-discord').Strategy;
 require('dotenv').config();
 
 const app = express();
-app.set('trust proxy', true);
-app.use(cors({
-  origin: true, // Ganti frontend-sultan.vercel.app sama URL asli lu
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+const botRoutes = require('./bot-routes');
+
+// Konfigurasi Passport
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
+
+passport.use(new DiscordStrategy({
+    clientID: process.env.DISCORD_CLIENT_ID,
+    clientSecret: process.env.DISCORD_CLIENT_SECRET,
+    callbackURL: process.env.DISCORD_CALLBACK_URL,
+    scope: ['identify', 'guilds']
+}, (accessToken, refreshToken, profile, done) => {
+    return done(null, profile);
 }));
 
-// ==========================================
-// 1. PENGATURAN WEB & SESSION
-// ==========================================
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'rahasia_sistem_ppob',
-    resave: true,
-    saveUninitialized: true,
-    cookie: { secure: true, sameSite: 'none', httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false
 }));
-
 app.use(passport.initialize());
 app.use(passport.session());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use('/api/bot-master', botRoutes);
 
-// Rute API
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/user', require('./routes/user'));
-app.use('/api/admin', require('./routes/admin'));
-// Jembatan buat nangkep error dari browser (Frontend)
-app.post('/api/log-frontend', (req, res) => {
-    const errorLogger = require('./utils/errorLogger');
-    errorLogger.catatError(`[🌐 FRONTEND ERROR] di ${req.body.url}:
-${req.body.message}`);
-    res.json({ success: true });
+// Log Monitor
+app.use((req, res, next) => {
+  if (req.url !== '/favicon.ico') console.log(`📩 [LOG] ${req.method} ${req.url}`);
+  next();
 });
 
-// ==========================================
-// 2. MESIN BOT UTAMA (COMMAND HANDLER)
-// ==========================================
-const botClient = new Client({ 
-    partials: [Partials.Channel],
-    intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent,
-        GatewayIntentBits.DirectMessages ] 
+// Route Auth Beneran
+app.get('/api/auth/discord', passport.authenticate('discord'));
+
+app.get('/api/auth/callback', passport.authenticate('discord', {
+    failureRedirect: 'http://localhost:5173'
+}), (req, res) => {
+    console.log("✅ [SUCCESS] User Berhasil Login!");
+    res.redirect('http://localhost:5173/dashboard'); // Lempar ke dashboard frontend
 });
 
-global.mainBot = botClient;
-botClient.commands = new Collection();
-// Baca semua file command
-if (fs.existsSync('./commands')) {
-    const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-    for (const file of commandFiles) {
-        const command = require(`./commands/${file}`);
-        botClient.commands.set(command.name, command);
-    }
-}
-
-botClient.on('messageCreate', (message) => {
-    const prefix = '!'; 
-    if (!message.content.startsWith(prefix) || message.author.bot) return;
-
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const commandName = args.shift().toLowerCase();
-
-    if (!botClient.commands.has(commandName)) return;
-
-    try {
-        botClient.commands.get(commandName).execute(message, args, db);
-    } catch (error) {
-        errorLogger.catatError(`Error Command ${commandName}: ${error.message}`);
-        message.reply('❌ Terjadi kesalahan saat mengeksekusi perintah ini.');
-    }
+app.use((err, req, res, next) => {
+  if (err && err.name === 'TokenError') {
+    console.log("⚠️ [WARN] Kode Discord hangus/expired. Redirect ke Home...");
+    return res.redirect('http://localhost:5173');
+  }
+  next(err);
+});
+// API buat ambil token yang udah ada
+app.get('/api/token-master', async (req, res) => {
+  try {
+    // Di sini nanti lu ganti pake query database beneran (Sequelize/PG)
+    // Untuk sekarang kita balikin data placeholder
+    res.json({ token: "MTIzNDU2Nzg5..." }); 
+  } catch (err) {
+    res.status(500).json({ error: "Gagal ambil token" });
+  }
 });
 
-botClient.once('clientReady', () => {
-    console.log(`🤖 Bot Utama [${botClient.user.tag}] Berhasil Online!`);
-    errorLogger.catatError('✅ Sistem Bot & Web Dashboard berhasil menyala bersamaan!');
+// API buat simpen token baru
+app.post('/api/token-master', express.json(), async (req, res) => {
+  const { token } = req.body;
+  console.log("💾 [DB] Token Master baru disimpan:", token);
+  // Di sini nanti proses INSERT ke database Railway lu
+  res.json({ message: "Token berhasil disimpan ke database!" });
 });
-
-// ==========================================
-// 3. STARTUP SISTEM (SYNC DB & JALANKAN)
-// ==========================================
-db.sequelize.sync({ alter: true }).then(async () => {
-    console.log('✅ Database siap!');
-    
-
-    // AUTO ANGKAT SULTAN JADI ADMIN
-    db.User.findOne({ where: { username: 'kentos5093' } }).then(user => {
-        if (user && user.role !== 'admin') {
-            user.role = 'admin';
-            user.save();
-            console.log('👑 SULTAN kentos5093 RESMI JADI ADMIN!');
-        }
-    }).catch(err => console.log('Gagal angkat admin:', err));
-    
-    // Nyalain bot pakai Token Utama dari .env
-    if (process.env.DISCORD_BOT_TOKEN) {
-        botClient.login(process.env.DISCORD_BOT_TOKEN).catch(err => {
-            errorLogger.catatError(`Gagal Login Bot Utama: ${err.message}`);
-        });
-    } else {
-        console.log('⚠️ DISCORD_BOT_TOKEN kosong di .env / Railway!');
-    }
-
-}).catch(err => console.error('Gagal sync DB:', err));
-
-// Global Error Catcher (Biar web gak gampang crash)
-process.on('uncaughtException', (err) => {
-    errorLogger.catatError(`FATAL ERROR: ${err.message}`);
+// API buat nampilin profil lu
+app.get('/api/me', (req, res) => {
+  if (req.user) {
+    // Kalau udah login, kirim namanya
+    res.json({ username: req.user.global_name || req.user.username });
+  } else {
+    res.status(401).json({ error: "Belum login" });
+  }
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🌐 Server Web nyala di port ${PORT}`));
-
-const { reportError } = require('./lib/logger');
-
-// Jaring Error Global (Backend)
-process.on('unhandledRejection', (reason, promise) => {
-    reportError(reason, 'Unhandled Rejection (Janji Palsu API)');
-});
-
-process.on('uncaughtException', (error) => {
-    reportError(error, 'Uncaught Exception (Kabel Putus Fatal)');
+app.listen(3000, () => {
+  console.log("\n🚀 BACKEND READY! DISCORD AUTH AKTIF.");
 });
