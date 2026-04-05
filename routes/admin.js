@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../models');
+const { DataTypes } = require('sequelize');
+if (!db.BotConfig) db.BotConfig = require('../models/botconfig')(db.sequelize, DataTypes);
 
 // Middleware Satpam Admin
 const isAdmin = (req, res, next) => {
