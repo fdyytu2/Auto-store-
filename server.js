@@ -21,7 +21,7 @@ passport.use(new DiscordStrategy({
     return done(null, profile);
 }));
 
-app.use(cors({ origin: ['http://localhost:5173', 'https://frontend-sultan.vercel.app'], credentials: true }));
+app.use(cors({ origin: ['https://frontend-sultan.vercel.app', 'https://frontend-sultan.vercel.app'], credentials: true }));
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -41,16 +41,16 @@ app.use((req, res, next) => {
 app.get('/api/auth/discord', passport.authenticate('discord'));
 
 app.get('/api/auth/callback', passport.authenticate('discord', {
-    failureRedirect: 'http://localhost:5173'
+    failureRedirect: 'https://frontend-sultan.vercel.app'
 }), (req, res) => {
     console.log("✅ [SUCCESS] User Berhasil Login!");
-    res.redirect('http://localhost:5173/dashboard'); // Lempar ke dashboard frontend
+    res.redirect('https://frontend-sultan.vercel.app/dashboard'); // Lempar ke dashboard frontend
 });
 
 app.use((err, req, res, next) => {
   if (err && err.name === 'TokenError') {
     console.log("⚠️ [WARN] Kode Discord hangus/expired. Redirect ke Home...");
-    return res.redirect('http://localhost:5173');
+    return res.redirect('https://frontend-sultan.vercel.app');
   }
   next(err);
 });
@@ -81,6 +81,7 @@ app.get('/api/me', (req, res) => {
     res.status(401).json({ error: "Belum login" });
   }
 });
-app.listen(3000, () => {
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
   console.log("\n🚀 BACKEND READY! DISCORD AUTH AKTIF.");
 });
