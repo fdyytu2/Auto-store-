@@ -1,7 +1,7 @@
 module.exports = {
     name: 'ping',
-    description: 'Cek status bot',
+    description: 'Ngetes apakah Kora Engine hidup',
     execute(message, args, db) {
-        message.reply('🏓 **Pong!** Bot Auto Store PPOB sudah siap melayani!');
+        message.reply('🏓 **Pong!** Kora Master Engine sudah aktif dan siap melayani Sultan!');
     }
 };
