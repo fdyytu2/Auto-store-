@@ -18,16 +18,16 @@ router.post('/control-main-bot', isAdmin, async (req, res) => {
             
             // 1. Kalau lu masukin token baru, simpan ke database!
             if (token) {
-                let setting = await db.Setting.findOne({ where: { key: 'MASTER_BOT_TOKEN' } });
+                let setting = await db.BotConfig.findOne({ where: { key: 'MASTER_BOT_TOKEN' } });
                 if (setting) {
                     setting.value = token;
                     await setting.save();
                 } else {
-                    await db.Setting.create({ key: 'MASTER_BOT_TOKEN', value: token });
+                    await db.BotConfig.create({ key: 'MASTER_BOT_TOKEN', value: token });
                 }
             } else {
                 // 2. Kalau kotak token dikosongin, cari di database!
-                const savedToken = await db.Setting.findOne({ where: { key: 'MASTER_BOT_TOKEN' } });
+                const savedToken = await db.BotConfig.findOne({ where: { key: 'MASTER_BOT_TOKEN' } });
                 if (savedToken) botToken = savedToken.value;
             }
 
@@ -52,7 +52,7 @@ router.get('/bot-status', async (req, res) => {
     try {
         const isOnline = global.mainBot ? global.mainBot.ws.status === 0 : false;
         // Cek apakah token udah ada di lemari database
-        const savedToken = await db.Setting.findOne({ where: { key: 'MASTER_BOT_TOKEN' } });
+        const savedToken = await db.BotConfig.findOne({ where: { key: 'MASTER_BOT_TOKEN' } });
         
         // Kita kirim hasToken ke frontend biar React tau kapan harus nyembunyiin kotak input
         res.json({ success: true, online: isOnline, hasToken: !!savedToken });
