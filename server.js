@@ -5,7 +5,7 @@ const session = require('express-session');
 const DiscordStrategy = require('passport-discord').Strategy;
 const { BotConfig } = require('./db');
 const { router: botRoutes, startBot } = require('./bot-routes');
-const { hanyaSultan } = require('./middlewares/auth'); // Panggil satpam
+const { hanyaSultan } = require('./middlewares/auth');
 require('dotenv').config();
 
 const app = express();
@@ -36,13 +36,23 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.set('trust proxy', 1);
 
-// 🛡️ PASANG SATPAM DI SINI
 app.use('/api/bot-master', hanyaSultan, botRoutes);
 
 app.get('/api/auth/discord', passport.authenticate('discord'));
+
+// 🔥 INI YANG DIUBAH: PENGATUR LALU LINTAS LOGIN
 app.get('/api/auth/callback', passport.authenticate('discord', {
     failureRedirect: 'https://frontend-sultan.vercel.app'
-}), (req, res) => res.redirect('https://frontend-sultan.vercel.app/dashboard'));
+}), (req, res) => {
+    // Cek ID yang login. Kalau cocok sama OWNER_ID di Railway...
+    if (req.user.id === process.env.OWNER_ID) {
+        // Lempar ke Dashboard Admin
+        res.redirect('https://frontend-sultan.vercel.app/admin'); 
+    } else {
+        // Kalau user biasa, lempar ke Dashboard User
+        res.redirect('https://frontend-sultan.vercel.app/user'); 
+    }
+});
 
 app.get('/api/me', (req, res) => {
   if (req.user) {
