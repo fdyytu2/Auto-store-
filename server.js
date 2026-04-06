@@ -1,4 +1,5 @@
 const express = require('express');
+const { Subscription } = require('./models');
 const cors = require('cors');
 const passport = require('passport');
 const session = require('express-session');
@@ -55,10 +56,10 @@ app.get('/api/auth/callback', passport.authenticate('discord', {
 });
 
 
-const { Subscription } = require('./models');
 
 
-const { Subscription } = require('./models');
+
+
 
 app.get('/api/me', async (req, res) => {
   if (req.user) {
