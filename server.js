@@ -5,7 +5,7 @@ const session = require('express-session');
 const DiscordStrategy = require('passport-discord').Strategy;
 
 // Import Database & Router
-const { BotConfig } = require('./db');
+const { BotConfig } = require('./models');
 const { Subscription } = require('./models');
 const { router: botRoutes, startBot } = require('./bot-routes');
 const { hanyaSultan } = require('./middlewares/auth');

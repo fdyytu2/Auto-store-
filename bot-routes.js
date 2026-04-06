@@ -38,10 +38,24 @@ const startBot = async (token) => {
     }
     
     // Bikin mesin baru yang fresh
-    client = new Client({ intents: [GatewayIntentBits.Guilds] });
+    const { Partials } = require('discord.js');
+    client = new Client({ 
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.DirectMessages
+      ],
+      partials: [Partials.Channel, Partials.Message]
+    });
+
+    // Panggil otak perintah dari botManager biar dia gak bego
+    const { startCustomBot } = require('./utils/botManager');
+    startCustomBot(token, process.env.OWNER_ID); // Lempar ke mesin pintar
+
     
     return await new Promise((resolve) => {
-      client.once('clientReady', (c) => {
+      client.once('ready', (c) => {
         console.log(`✅ Kora Ready: ${c.user.tag}`);
         updateState("Online", c.user.username, c.user.displayAvatarURL());
         botState.isLocked = false; // Buka gembok
