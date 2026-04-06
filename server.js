@@ -57,14 +57,35 @@ app.get('/api/auth/callback', passport.authenticate('discord', {
 
 const { Subscription } = require('./models');
 
+
+const { Subscription } = require('./models');
+
 app.get('/api/me', async (req, res) => {
   if (req.user) {
     const isSultan = req.user.id === process.env.OWNER_ID;
-    let userTier = 'basic'; // Default kasta rakyat jelata
+    let userTier = 'user'; // Default kasta beneran rakyat biasa (belum langganan)
     
     try {
-      // Cari kasta user di database
+      // Cek apakah dia udah beli langganan
       const sub = await Subscription.findOne({ where: { userId: req.user.id } });
+      if (sub && sub.plan) {
+        userTier = sub.plan; // Kalau ada, ganti jadi basic/advance/pro/ultra
+      }
+    } catch (err) {
+      console.error("Gagal ngecek kasta:", err);
+    }
+
+    res.json({ 
+      id: req.user.id,
+      username: req.user.global_name || req.user.username,
+      avatar: req.user.avatar ? `https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.webp` : 'https://cdn.discordapp.com/embed/avatars/0.png',
+      isSultan: isSultan,
+      tier: userTier
+    });
+  }
+  else res.status(401).json({ error: "Belum login" });
+});
+
       if (sub) {
         userTier = sub.plan; // Bisa basic, advance, pro, atau ultra
       } else {
