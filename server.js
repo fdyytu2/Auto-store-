@@ -4,7 +4,8 @@ const passport = require('passport');
 const session = require('express-session');
 const DiscordStrategy = require('passport-discord').Strategy;
 const { BotConfig } = require('./db');
-const { router: botRoutes, startBot } = require('./bot-routes'); 
+const { router: botRoutes, startBot } = require('./bot-routes');
+const { hanyaSultan } = require('./middlewares/auth'); // Panggil satpam
 require('dotenv').config();
 
 const app = express();
@@ -19,9 +20,9 @@ passport.use(new DiscordStrategy({
     scope: ['identify', 'guilds']
 }, (accessToken, refreshToken, profile, done) => done(null, profile)));
 
-app.use(cors({ 
-    origin: ['http://localhost:5173', 'https://frontend-sultan.vercel.app'], 
-    credentials: true 
+app.use(cors({
+    origin: ['http://localhost:5173', 'https://frontend-sultan.vercel.app'],
+    credentials: true
 }));
 
 app.use(session({
@@ -35,7 +36,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.set('trust proxy', 1);
 
-app.use('/api/bot-master', botRoutes);
+// 🛡️ PASANG SATPAM DI SINI
+app.use('/api/bot-master', hanyaSultan, botRoutes);
 
 app.get('/api/auth/discord', passport.authenticate('discord'));
 app.get('/api/auth/callback', passport.authenticate('discord', {
@@ -43,7 +45,14 @@ app.get('/api/auth/callback', passport.authenticate('discord', {
 }), (req, res) => res.redirect('https://frontend-sultan.vercel.app/dashboard'));
 
 app.get('/api/me', (req, res) => {
-  if (req.user) res.json({ username: req.user.global_name || req.user.username });
+  if (req.user) {
+    const isSultan = req.user.id === process.env.OWNER_ID;
+    res.json({ 
+      username: req.user.global_name || req.user.username,
+      avatar: req.user.avatar ? `https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.webp` : 'https://cdn.discordapp.com/embed/avatars/0.png',
+      isSultan: isSultan
+    });
+  }
   else res.status(401).json({ error: "Belum login" });
 });
 

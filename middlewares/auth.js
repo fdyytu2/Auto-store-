@@ -12,10 +12,7 @@ module.exports = {
         res.status(403).json({ error: '🚫 Lu bukan Bos!' });
     },
     hanyaUltra: async (req, res, next) => {
-        // Kalau Bos (Admin) bebas masuk tanpa cek database
-        if (req.session.user.role === 'admin') return next();
-
-        // Kalau user biasa, cek database dia Ultra atau bukan
+        if (req.session.user && req.session.user.role === 'admin') return next();
         try {
             const sub = await db.Subscription.findOne({ where: { userId: req.session.user.id } });
             if (sub && sub.plan === 'ultra') return next();
@@ -23,5 +20,17 @@ module.exports = {
         } catch (err) {
             res.status(500).json({ success: false, error: 'Server Error' });
         }
+    },
+    // 🔥 INI SATPAM BARU KHUSUS SULTAN (Pakai Passport.js & Railway Env)
+    hanyaSultan: (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ error: '🚫 Belum login ke Discord bre!' });
+        }
+        
+        if (req.user.id !== process.env.OWNER_ID) {
+            return res.status(403).json({ error: '🚫 Akses Ditolak! Lu bukan Sultan Kora.' });
+        }
+        
+        next(); // Kalau ID cocok, pintunya dibukain
     }
 };
