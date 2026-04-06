@@ -1,53 +1,69 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
+const db = require('../models');
 
-// Brankas sementara buat nyimpen bot yang lagi nyala di memori server
-const activeBots = new Map();
+// Tempat nyimpen semua bot yang lagi jalan
+const runningBots = new Map();
 
-module.exports = {
-    // Fungsi buat nyalain bot penyewa
-    startBot: async (botId, token) => {
-        if (activeBots.has(botId)) {
-            console.log(`Bot ${botId} udah nyala, bre.`);
-            return true;
-        }
-        
+async function startCustomBot(token, ownerId) {
+    if (runningBots.has(ownerId)) {
+        console.log(`⚠️ Bot untuk owner ${ownerId} sudah jalan.`);
+        return true;
+    }
+
+    const client = new Client({
+        intents: [
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.MessageContent
+        ]
+    });
+
+    client.commands = new Collection();
+    client.ownerId = ownerId; // 🔥 INI KUNCI SAKTINYA: Bot pegang ID Pemilik!
+
+    // Load Commands
+    const commandPath = path.join(__dirname, '../commands');
+    const commandFiles = fs.readdirSync(commandPath).filter(file => file.endsWith('.js'));
+
+    for (const file of commandFiles) {
+        const command = require(`${commandPath}/${file}`);
+        client.commands.set(command.name, command);
+    }
+
+    // Event: Bot Ready
+    client.once('ready', () => {
+        console.log(`✅ Bot Toko Aktif: ${client.user.tag} (Owner: ${ownerId})`);
+    });
+
+    // Event: Pesan Masuk
+    client.on('messageCreate', async (message) => {
+        if (message.author.bot || !message.content.startsWith('!')) return;
+
+        const args = message.content.slice(1).trim().split(/ +/);
+        const commandName = args.shift().toLowerCase();
+
+        const command = client.commands.get(commandName);
+        if (!command) return;
+
         try {
-            const client = new Client({
-                intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
-            });
-
-            client.once('clientReady', () => {
-                console.log(`🚀 Custom Bot [${client.user.tag}] berhasil online!`);
-            });
-
-            // Respon dasar bot penyewa
-            client.on('messageCreate', (message) => {
-                if (message.author.bot) return;
-                
-                // Nanti logika PPOB/AI ditaruh di sini
-                if (message.content === '!ping') {
-                    message.reply('Pong! Bot PPOB lu udah nyala bos! 🗿');
-                }
-            });
-
-            await client.login(token);
-            activeBots.set(botId, client); // Masukin ke brankas
-            return true;
-        } catch (err) {
-            console.error(`🚨 Gagal nyalain bot ${botId}:`, err.message);
-            return false;
+            // Jalankan command dengan melempar db dan ownerId
+            await command.execute(message, args, client, db);
+        } catch (error) {
+            console.error(error);
+            message.reply('❌ Terjadi kesalahan saat menjalankan perintah.');
         }
-    },
+    });
 
-    // Fungsi buat matiin bot penyewa (misal masa sewanya abis)
-    stopBot: (botId) => {
-        if (activeBots.has(botId)) {
-            const client = activeBots.get(botId);
-            client.destroy(); // Putus koneksi dari Discord
-            activeBots.delete(botId); // Keluarin dari brankas
-            console.log(`🛑 Bot ${botId} udah dimatiin.`);
-            return true;
-        }
+    try {
+        await client.login(token);
+        runningBots.set(ownerId, client);
+        return true;
+    } catch (err) {
+        console.error(`❌ Gagal login bot owner ${ownerId}:`, err.message);
         return false;
     }
-};
+}
+
+module.exports = { startCustomBot, runningBots };

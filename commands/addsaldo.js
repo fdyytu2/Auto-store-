@@ -2,32 +2,34 @@ const { formatRupiah } = require('../utils/helpers');
 
 module.exports = {
     name: 'addsaldo',
-    description: 'Top-up saldo pembeli (Admin Only)',
-    async execute(message, args, client, db, tier) {
-        if (!message.member.permissions.has('Administrator')) {
-            return message.reply('❌ Cuma admin toko yang bisa nambahin saldo!');
+    description: 'Menambah saldo pelanggan (Owner Only)',
+    async execute(message, args, client, db) {
+        const ownerId = client.ownerId;
+
+        // Cek apakah yang ngetik adalah pemilik bot ini
+        if (message.author.id !== ownerId) {
+            return message.reply('❌ Cuma pemilik bot yang bisa pakai perintah ini!');
         }
 
         const targetUser = message.mentions.users.first();
-        const amount = parseInt(args[1]);
+        const jumlah = parseInt(args[1]);
 
-        if (!targetUser || isNaN(amount) || amount <= 0) {
-            return message.reply('⚠️ Format salah! Gunakan: `!addsaldo @user nominal`');
+        if (!targetUser || isNaN(jumlah)) {
+            return message.reply('⚠️ Format: `!addsaldo @User [Jumlah]`');
         }
 
         try {
-            const [user] = await db.User.findOrCreate({
-                where: { user_id: targetUser.id, guild_id: message.guild.id },
-                defaults: { balance: 0 }
+            const [wallet] = await db.Wallet.findOrCreate({
+                where: { discordId: targetUser.id, ownerId: ownerId },
+                defaults: { saldo: 0 }
             });
 
-            // ORM: Langsung panggil increment buat nambah data numerik
-            await user.increment('balance', { by: amount });
+            await wallet.increment('saldo', { by: jumlah });
             
-            message.channel.send(`✅ Berhasil top-up **${formatRupiah(amount)}** ke dompet ${targetUser}.`);
+            message.reply(`✅ Berhasil menambah saldo **${targetUser.username}** sebesar **${formatRupiah(jumlah)}**.\nSaldo sekarang: ${formatRupiah(wallet.saldo + jumlah)}`);
         } catch (error) {
             console.error(error);
-            message.reply('❌ Gagal menambahkan saldo.');
+            message.reply('❌ Gagal menambah saldo.');
         }
     }
 };
