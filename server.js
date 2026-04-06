@@ -1,16 +1,19 @@
 const express = require('express');
-const { Subscription } = require('./models');
 const cors = require('cors');
 const passport = require('passport');
 const session = require('express-session');
 const DiscordStrategy = require('passport-discord').Strategy;
+
+// Import Database & Router
 const { BotConfig } = require('./db');
+const { Subscription } = require('./models');
 const { router: botRoutes, startBot } = require('./bot-routes');
 const { hanyaSultan } = require('./middlewares/auth');
 require('dotenv').config();
 
 const app = express();
 
+// Konfigurasi Passport (Discord Login)
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
@@ -21,6 +24,7 @@ passport.use(new DiscordStrategy({
     scope: ['identify', 'guilds']
 }, (accessToken, refreshToken, profile, done) => done(null, profile)));
 
+// Middleware Standar
 app.use(cors({
     origin: ['http://localhost:5173', 'https://frontend-sultan.vercel.app'],
     credentials: true
@@ -37,43 +41,37 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.set('trust proxy', 1);
 
+// Pintu Masuk Bot Master (Digembok khusus Sultan)
 app.use('/api/bot-master', hanyaSultan, botRoutes);
 
+// Pintu Masuk Auth Discord
 app.get('/api/auth/discord', passport.authenticate('discord'));
 
-// 🔥 INI YANG DIUBAH: PENGATUR LALU LINTAS LOGIN
+// Polisi Lalu Lintas (Redirect Login)
 app.get('/api/auth/callback', passport.authenticate('discord', {
     failureRedirect: 'https://frontend-sultan.vercel.app'
 }), (req, res) => {
-    // Cek ID yang login. Kalau cocok sama OWNER_ID di Railway...
     if (req.user.id === process.env.OWNER_ID) {
-        // Lempar ke Dashboard Admin
         res.redirect('https://frontend-sultan.vercel.app/admin'); 
     } else {
-        // Kalau user biasa, lempar ke Dashboard User
         res.redirect('https://frontend-sultan.vercel.app/user'); 
     }
 });
 
-
-
-
-
-
-
+// 🔥 API PROFILE & KASTA (Udah Fix Async/Await!)
 app.get('/api/me', async (req, res) => {
   if (req.user) {
     const isSultan = req.user.id === process.env.OWNER_ID;
-    let userTier = 'user'; // Default kasta beneran rakyat biasa (belum langganan)
+    let userTier = 'user'; // Kasta rakyat jelata (Freemium)
     
     try {
-      // Cek apakah dia udah beli langganan
+      // Cek kasta user di database
       const sub = await Subscription.findOne({ where: { userId: req.user.id } });
       if (sub && sub.plan) {
-        userTier = sub.plan; // Kalau ada, ganti jadi basic/advance/pro/ultra
+        userTier = sub.plan;
       }
     } catch (err) {
-      console.error("Gagal ngecek kasta:", err);
+      console.error("⚠️ Gagal ngecek kasta:", err.message);
     }
 
     res.json({ 
@@ -87,31 +85,7 @@ app.get('/api/me', async (req, res) => {
   else res.status(401).json({ error: "Belum login" });
 });
 
-      if (sub) {
-        userTier = sub.plan; // Bisa basic, advance, pro, atau ultra
-      } else {
-        // Kalau belum ada datanya, bikinin kasta basic otomatis
-        await Subscription.create({ userId: req.user.id, plan: 'basic' });
-      }
-    } catch (err) {
-      console.error("Gagal ngecek kasta:", err);
-    }
-
-    res.json({ 
-      id: req.user.id,
-      username: req.user.global_name || req.user.username,
-      avatar: req.user.avatar ? `https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.webp` : 'https://cdn.discordapp.com/embed/avatars/0.png',
-      isSultan: isSultan,
-      tier: userTier // 🔥 INI DATA KASTA YANG DIKIRIM KE VERCEL
-    });
-  }
-  else res.status(401).json({ error: "Belum login" });
-});
-
-  }
-  else res.status(401).json({ error: "Belum login" });
-});
-
+// Fungsi Auto-Start Bot
 async function autoStartSultan() {
   try {
     const config = await BotConfig.findByPk(1);
@@ -126,6 +100,7 @@ async function autoStartSultan() {
   } catch (err) { console.error("⚠️ [AUTO-START] DB Error"); }
 }
 
+// Nyalain Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 BACKEND READY! PORT: ${PORT}`);
