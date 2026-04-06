@@ -7,6 +7,9 @@ const db = require('../models');
 const runningBots = new Map();
 
 async function startCustomBot(token, ownerId) {
+    // 🔥 PENGAMAN: Kalau ownerId kosong, tarik dari .env
+    ownerId = ownerId || process.env.OWNER_ID;
+
     if (runningBots.has(ownerId)) {
         console.log(`⚠️ Bot untuk owner ${ownerId} sudah jalan.`);
         return true;
@@ -21,7 +24,7 @@ async function startCustomBot(token, ownerId) {
     });
 
     client.commands = new Collection();
-    client.ownerId = ownerId; // 🔥 INI KUNCI SAKTINYA: Bot pegang ID Pemilik!
+    client.ownerId = ownerId; // Bot pegang KTP Pemilik
 
     // Load Commands
     const commandPath = path.join(__dirname, '../commands');
@@ -32,12 +35,12 @@ async function startCustomBot(token, ownerId) {
         client.commands.set(command.name, command);
     }
 
-    // Event: Bot Ready
+    // EVENT 1: Bot Ready
     client.once('ready', () => {
         console.log(`✅ Bot Toko Aktif: ${client.user.tag} (Owner: ${ownerId})`);
     });
 
-    // Event: Pesan Masuk
+    // EVENT 2: Penangkap Ketikan Teks (Message Create)
     client.on('messageCreate', async (message) => {
         if (message.author.bot || !message.content.startsWith('!')) return;
 
@@ -47,8 +50,15 @@ async function startCustomBot(token, ownerId) {
         const command = client.commands.get(commandName);
         if (!command) return;
 
-        
-    // 🔥 EVENT BARU: Penangkap Tombol & Modal Pop-up
+        try {
+            await command.execute(message, args, client, db);
+        } catch (error) {
+            console.error("Error eksekusi command:", error);
+            message.reply('❌ Terjadi kesalahan saat menjalankan perintah.');
+        }
+    });
+
+    // EVENT 3: Penangkap Tombol & Modal (Interaction Create) - SEKARANG MISAH!
     client.on('interactionCreate', async (interaction) => {
         if (interaction.isButton()) {
             const { handleButton } = require('../interactions/buttonHandler');
@@ -59,15 +69,7 @@ async function startCustomBot(token, ownerId) {
         }
     });
 
-    try {
-            // Jalankan command dengan melempar db dan ownerId
-            await command.execute(message, args, client, db);
-        } catch (error) {
-            console.error(error);
-            message.reply('❌ Terjadi kesalahan saat menjalankan perintah.');
-        }
-    });
-
+    // Login ke Discord
     try {
         await client.login(token);
         runningBots.set(ownerId, client);
