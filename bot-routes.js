@@ -11,7 +11,8 @@ const startBot = async (token) => {
     client = new Client({ intents: [GatewayIntentBits.Guilds] });
     
     return new Promise((resolve) => {
-      client.once('ready', () => {
+      // INI YANG DIGANTI BIAR GAK WARNING: 'clientReady'
+      client.once('clientReady', () => {
         console.log(`✅ Kora Ready: ${client.user.tag}`);
         resolve(true);
       });
@@ -26,7 +27,6 @@ const startBot = async (token) => {
 router.get('/info', async (req, res) => {
   try {
     const config = await BotConfig.findByPk(1);
-    // Pake isReady() biar akurat 100%, gak ketipu sama cache Discord
     const isOnline = client && client.isReady();
     
     const botInfo = isOnline ? {
