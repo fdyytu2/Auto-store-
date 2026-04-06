@@ -47,7 +47,19 @@ async function startCustomBot(token, ownerId) {
         const command = client.commands.get(commandName);
         if (!command) return;
 
-        try {
+        
+    // 🔥 EVENT BARU: Penangkap Tombol & Modal Pop-up
+    client.on('interactionCreate', async (interaction) => {
+        if (interaction.isButton()) {
+            const { handleButton } = require('../interactions/buttonHandler');
+            await handleButton(interaction, client, db);
+        } else if (interaction.isModalSubmit()) {
+            const { handleModal } = require('../interactions/modalHandler');
+            await handleModal(interaction, client, db);
+        }
+    });
+
+    try {
             // Jalankan command dengan melempar db dan ownerId
             await command.execute(message, args, client, db);
         } catch (error) {
