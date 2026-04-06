@@ -1,22 +1,14 @@
-const fs = require('fs');
-const path = require('path');
-const { sequelize } = require('../db');
+const User = require('./User');
+const Subscription = require('./Subscription');
+const CustomBot = require('./CustomBot');
+const Product = require('./Product');
+const Transaction = require('./Transaction');
+const Deposit = require('./Deposit');
+const Wallet = require('./Wallet');
+const Guild = require('./Guild');
+const BotConfig = require('./botconfig');
+const Setting = require('./setting');
 
-const db = {};
-
-// Baca semua file di dalam folder models/ secara otomatis
-fs.readdirSync(__dirname)
-  .filter(file => {
-    // Jangan baca index.js dan file tersembunyi
-    return (file.indexOf('.') !== 0) && (file !== 'index.js') && (file.slice(-3) === '.js');
-  })
-  .forEach(file => {
-    const model = require(path.join(__dirname, file));
-    // Masukin masing-masing model ke dalam object db
-    db[model.name] = model;
-  });
-
-// Masukin koneksi database utama
-db.sequelize = sequelize;
-
-module.exports = db;
+module.exports = {
+  User, Subscription, CustomBot, Product, Transaction, Deposit, Wallet, Guild, BotConfig, Setting
+};

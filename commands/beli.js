@@ -2,64 +2,72 @@ const { formatRupiah } = require('../utils/helpers');
 
 module.exports = {
     name: 'beli',
-    description: 'Beli barang menggunakan saldo uang asli',
+    description: 'Beli barang menggunakan SKU',
     async execute(message, args, client, db, tier) {
-        const productId = parseInt(args[0]);
+        // Ambil ID Bos/Pemilik dari memori bot (Nanti kita setting di botManager)
+        const ownerId = client.ownerId || process.env.OWNER_ID; 
 
-        if (isNaN(productId)) {
-            return message.reply('⚠️ Format salah! Gunakan: `!beli [ID_Barang]`');
+        if (!args[0]) {
+            return message.reply('⚠️ Format salah! Gunakan: `!beli [SKU] [Target/ID Game]`\nContoh: `!beli ML86 12345678`');
         }
 
-        // Mulai Transaksi Terisolasi (Mencegah Race Condition/Bug Saldo Minus)
+        const sku = args[0].toUpperCase();
+        const target = args[1] || 'Tidak ada target';
+
+        // Mulai Transaksi Terisolasi (ACID)
         const t = await db.sequelize.transaction();
 
         try {
-            // 1. Cek Produk
-            const product = await db.Product.findOne({ 
-                where: { id: productId, guild_id: message.guild.id },
-                transaction: t 
+            // 1. Cari produk berdasarkan SKU di toko ini aja
+            const product = await db.Product.findOne({
+                where: { sku: sku, ownerId: ownerId },
+                transaction: t
             });
 
             if (!product) {
                 await t.rollback();
-                return message.reply('❌ Barang tidak ditemukan di toko ini.');
+                return message.reply(`❌ Barang dengan SKU **${sku}** tidak ditemukan di toko ini.`);
             }
             if (product.stock <= 0) {
                 await t.rollback();
-                return message.reply('❌ Maaf, stok barang ini sedang kosong.');
+                return message.reply(`❌ Maaf, stok barang **${product.name}** sedang kosong.`);
             }
 
-            // 2. Cek Saldo Pembeli
-            const [user] = await db.User.findOrCreate({
-                where: { user_id: message.author.id, guild_id: message.guild.id },
-                defaults: { balance: 0 },
+            // 2. Cek Dompet Pembeli (Pakai tabel Wallet!)
+            const [wallet] = await db.Wallet.findOrCreate({
+                where: { discordId: message.author.id, ownerId: ownerId },
+                defaults: { saldo: 0 },
                 transaction: t
             });
 
-            if (user.balance < product.price) {
+            if (wallet.saldo < product.price) {
                 await t.rollback();
-                return message.reply(`❌ Saldo tidak cukup! Harga barang **${formatRupiah(product.price)}**, sedangkan saldo kamu **${formatRupiah(user.balance)}**.`);
+                return message.reply(`❌ Saldo kurang! Harga: **${formatRupiah(product.price)}**, Saldo kamu: **${formatRupiah(wallet.saldo)}**.`);
             }
 
-            // 3. Eksekusi Transaksi (Potong saldo, kurangi stok)
-            await user.decrement('balance', { by: product.price, transaction: t });
+            // 3. Eksekusi: Potong saldo, kurangi stok
+            await wallet.decrement('saldo', { by: product.price, transaction: t });
             await product.decrement('stock', { by: 1, transaction: t });
+
+            // 4. Catat Transaksi
+            await db.Transaction.create({
+                ownerId: ownerId,
+                userId: message.author.id,
+                sku: sku,
+                target: target,
+                price: product.price,
+                status: 'success'
+            }, { transaction: t });
 
             // Simpan perubahan ke database
             await t.commit();
 
-            // 4. Kirim Konfirmasi
-            message.author.send(`🎉 **Terima kasih telah berbelanja!**\nKamu telah membeli **${product.name}** seharga ${formatRupiah(product.price)}.\n*(Ini adalah simulasi pengiriman produk)*`).catch(() => {
-                message.channel.send(`⚠️ ${message.author}, DM kamu tertutup! Buka pengaturan privasi DM-mu.`);
-            });
-            
-            message.reply(`✅ Berhasil membeli **${product.name}**! Saldo berhasil dipotong.`);
+            message.reply(`✅ Berhasil membeli **${product.name}** (SKU: ${sku})!\n*Target:* ${target}\nSaldo berhasil dipotong ${formatRupiah(product.price)}.`);
 
         } catch (error) {
-            // Batalkan semua perubahan kalau ada error di tengah jalan
             await t.rollback();
-            console.error(error);
-            message.reply('❌ Transaksi gagal diproses. Saldo aman dan tidak terpotong.');
+            console.error("Error Transaksi:", error);
+            message.reply('❌ Sistem sedang sibuk. Saldo aman dan tidak terpotong.');
         }
     }
 };

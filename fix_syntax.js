@@ -1,11 +1,11 @@
 const fs = require('fs');
-let content = fs.readFileSync('server.js', 'utf8');
+let code = fs.readFileSync('server.js', 'utf8');
 
-// Kita sapu bersih komentar sisa dan ekor kodingan yang nyangkut beserta kurung tutupnya
-content = content.replace(/\/\/ BOM MINI:[\s\S]*?bersih!'\)\);\s*\}/g, '');
+// 1. Hapus SEMUA tulisan const { Subscription } yang ada di file
+code = code.replace(/const\s+\{\s*Subscription\s*\}\s*=\s*require\('\.\/models'\);/g, '');
 
-// Jaga-jaga kalau komentarnya udah ilang, kita sikat sisa ekornya aja
-content = content.replace(/\)\.then\(\(\) => console\.log\('💣 Tabel Setting berhasil di-reset bersih!'\)\);\s*\}/g, '');
+// 2. Taruh SATU aja di bagian paling atas (di bawah require express)
+code = code.replace(/(const express = require\('express'\);)/, "$1\nconst { Subscription } = require('./models');");
 
-fs.writeFileSync('server.js', content);
-console.log("✅ Operasi sukses! Ekor kodingan nyasar udah dibuang ke tong sampah.");
+fs.writeFileSync('server.js', code);
+console.log("✅ Syntax Error berhasil dibasmi! KTP ganda udah dihapus.");
