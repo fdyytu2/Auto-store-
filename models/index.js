@@ -10,7 +10,8 @@ const BotConfig = require('./botconfig');
 const Setting = require('./setting');
 const StoreSetting = require('./StoreSetting');
 const StockItem = require('./StockItem');
+const StockItem = require('./StockItem');
 
 module.exports = {
-  User, Subscription, CustomBot, Product, Transaction, Deposit, Wallet, Guild, BotConfig, Setting, StoreSetting, StockItem
+  User, Subscription, CustomBot, Product, Transaction, Deposit, Wallet, Guild, BotConfig, Setting, StoreSetting, StockItem, StockItem
 };
