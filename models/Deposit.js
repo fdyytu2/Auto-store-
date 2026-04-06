@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../db');
+const { sequelize } = require('../db');
 
 const Deposit = sequelize.define('Deposit', {
   userId: { type: DataTypes.STRING, allowNull: false },
