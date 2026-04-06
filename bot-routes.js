@@ -29,11 +29,8 @@ router.get('/info', async (req, res) => {
       avatar: "https://cdn.discordapp.com/embed/avatars/0.png",
       status: "Offline"
     } : null);
-    
-    res.json({ token: config?.token || null, info: botInfo });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
 
+    res.json({ token: config?.token || null, info: botInfo });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
